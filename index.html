@@ -6,12 +6,12 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Quy hoạch TP.HCM AI — GIS MVP</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./styles.css?v=10" />
+  <link rel="stylesheet" href="./styles.css?v=11" />
 </head>
 <body>
   <div class="app">
     <aside class="sidebar" id="tools">
-      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v1.0 · Có lớp CAD riêng</span></div></div>
+      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v1.1 · Số nhà & diện tích CAD</span></div></div>
       <div class="notice">⚠ Đây không phải cổng thông tin nhà nước. Chưa có lớp dữ liệu quy hoạch đã xác minh. Không dùng để kết luận pháp lý, cấp phép hoặc giao dịch.</div>
 <section class="approvedPlan">
 <h2>Đồ án duy nhất được lựa chọn</h2>
@@ -32,6 +32,16 @@
 </section>
 <section><h2>Tìm vị trí</h2><label for="address">Tìm địa chỉ / địa danh (OpenStreetMap)</label><div class="inline"><input id="address" type="search" placeholder="Ví dụ: Chợ Bến Thành" maxlength="160" autocomplete="off" /><button id="searchAddress">Tìm</button></div><div id="addressResults" class="searchresults" aria-live="polite"></div><p class="hint">Tra cứu theo yêu cầu qua Nominatim / OpenStreetMap; kết quả vị trí không phải thông tin quy hoạch.</p><label for="place">Khu vực</label><select id="place"><option value="hcm">Trung tâm TP.HCM</option><option value="thudau">Thủ Dầu Một (Bình Dương cũ)</option><option value="vungtau">Vũng Tàu (BR-VT cũ)</option></select><label for="coords">Tọa độ WGS84 (vĩ độ, kinh độ)</label><div class="inline"><input id="coords" placeholder="10.7769, 106.7009" /><button id="goto">Đi</button></div><p class="hint">Nhấp bản đồ để xem tọa độ và lưu điểm.</p></section>
       <section class="cadPanel"><h2>Lớp CAD Phường 16, Quận 11 cũ</h2><p class="hint">Bản CAD gốc đã chuyển sang GeoJSON bằng hệ giả định VN-2000 TM-3 105°45′. Chỉ dùng để đối chiếu vị trí, chưa kiểm định mốc khống chế.</p><label for="cadGeoFile">Tệp GeoJSON CAD đã chuyển đổi</label><input id="cadGeoFile" type="file" accept=".geojson,.json,application/geo+json" /><div class="inline"><button id="openCad" class="primary">Hiện CAD</button><button id="removeCad" class="subtle">Gỡ CAD</button></div><button id="loadCadHosted" class="full subtle">Tải lớp CAD trên GitHub (nếu đã upload)</button><label class="check"><input id="showCad" type="checkbox" checked /> Hiển thị đường CAD</label><div id="cadStatus" class="status" role="status">Chưa tải lớp CAD. Chọn GeoJSON đã chuyển đổi.</div></section>
+<section class="cadAreaPanel">
+<h2>Số nhà và diện tích hình học CAD</h2>
+<p class="hint">Từ layer 32 (nhãn số nhà) và layer 10 (đường ranh) của DXF anh cung cấp. Diện tích được tính từ vùng khép kín suy dựng, chỉ là <strong>ước tính hình học</strong>, không phải diện tích thửa địa chính được chứng nhận.</p>
+<label for="cadAreaFile">Chọn file số nhà và diện tích GeoJSON</label>
+<input type="file" id="cadAreaFile" accept=".geojson,.json,application/geo+json,application/json" />
+<div class="inline"><button id="loadCadArea" class="primary">Hiện số nhà & m²</button><button id="removeCadArea" class="subtle">Gỡ lớp</button></div>
+<button id="hostedCadArea" class="full subtle">Tải lớp này từ GitHub (nếu đã upload)</button>
+<label class="check"><input id="showCadHouseLabels" type="checkbox" checked /> Hiển thị số nhà khi phóng to</label>
+<p id="cadAreaStatus" class="status" role="status">Chưa nạp dữ liệu diện tích. Hãy chọn GeoJSON đã xử lý từ DXF.</p>
+</section>
 <section class="wmsPanel"><h2>Kết nối dịch vụ bản đồ WMS của đồ án 1125</h2>
 <p class="hint">Chỉ dùng URL WMS do bên sở hữu dữ liệu cho phép kết nối và công bố lại. Chưa có endpoint chính thức xác minh được để tự điền. Kết nối sẽ gửi yêu cầu trực tiếp từ trình duyệt.</p>
 <label for="wmsUrl">WMS GetCapabilities URL / đường dẫn gốc (HTTPS)</label><input id="wmsUrl" type="url" placeholder="https://example.gov.vn/geoserver/wms" autocomplete="off" />
@@ -78,6 +88,6 @@
     </main>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./app.js?v=10" defer></script>
+  <script src="./app.js?v=11" defer></script>
 </body>
 </html>
