@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Quy hoạch TP.HCM AI — GIS MVP</title>
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./styles.css?v=3" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./styles.css?v=4" />
 </head>
 <body>
   <div class="app">
@@ -26,16 +26,7 @@
       <div id="feedback" role="status" aria-live="polite" class="feedback"></div>
     </main>
   </div>
-  <script type="module">
-    const showError=(message)=>{const el=document.getElementById('mapError');el.hidden=false;el.textContent=message;};
-    try {
-      const maplibre=await import('https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs');
-      window.maplibregl=maplibre;
-      await import('./app.js?v=3');
-    } catch(error) {
-      console.error('Không khởi tạo được bản đồ:',error);
-      showError('Không tải được bản đồ. Kiểm tra mạng, thử Ctrl+F5 hoặc bật WebGL trong trình duyệt. Chi tiết: '+(error?.message||String(error)));
-    }
-  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="./app.js?v=4" defer></script>
 </body>
 </html>
