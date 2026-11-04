@@ -20,3 +20,5 @@
  .feedback{bottom:170px;left:10px}
 }
 @media print{.sidebar{display:none!important}.main{height:95vh!important}.mobileTools{display:none!important}}
+
+.maperror{position:absolute;z-index:5;top:150px;left:50%;transform:translateX(-50%);background:#fff5e7;border:1px solid #f0ae4c;border-radius:8px;padding:12px 16px;max-width:min(500px,90%);font-size:13px;box-shadow:0 4px 16px #0002}.maperror[hidden]{display:none}
