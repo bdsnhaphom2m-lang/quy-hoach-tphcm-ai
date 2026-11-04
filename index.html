@@ -11,7 +11,7 @@
 <body>
   <div class="app">
     <aside class="sidebar" id="tools">
-      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.8 · Đồ án 1125/QĐ-TTg</span></div></div>
+      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.9 · Đồ án 1125/QĐ-TTg</span></div></div>
       <div class="notice">⚠ Đây không phải cổng thông tin nhà nước. Chưa có lớp dữ liệu quy hoạch đã xác minh. Không dùng để kết luận pháp lý, cấp phép hoặc giao dịch.</div>
 <section class="approvedPlan">
 <h2>Đồ án duy nhất được lựa chọn</h2>
@@ -62,7 +62,7 @@
 </section>
 <section><h2>Dữ liệu đồ án 1125/QĐ-TTg</h2><p class="hint">Chỉ nhận GeoJSON EPSG:4326 thuộc đồ án 1125/QĐ-TTg, có quyền tái sử dụng và công bố phù hợp. File do người dùng cung cấp vẫn là CHƯA XÁC MINH.</p>
 <label class="check"><input type="checkbox" id="confirmPlan" /> Tôi xác nhận file thuộc đúng đồ án 1125/QĐ-TTg</label>
-<label class="check"><input type="checkbox" id="confirmRights" /> Tôi có quyền sử dụng dữ liệu cho mục đích này</label><label for="sourceName">Tên bộ dữ liệu</label><input id="sourceName" placeholder="Ví dụ: Lớp chức năng sử dụng đất của đồ án 1125" /><label for="sourceUrl">Nguồn / URL hồ sơ</label><input id="sourceUrl" type="url" placeholder="https://..." /><label for="sourceRights">Quyền sử dụng / giấy phép</label><input id="sourceRights" placeholder="Ghi rõ giấy phép / văn bản cho phép và phạm vi quyền" /><label for="geoFile">Tệp GeoJSON (EPSG:4326)</label><input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json" /><button class="primary full" id="loadGeo">Nạp dữ liệu</button><div class="inline layercontrols"><label class="check"><input id="showLayer" type="checkbox" checked /> Hiển thị</label><button id="removeLayer" class="subtle">Xóa lớp</button></div><label for="opacity">Độ đậm lớp: <span id="opacityNum">55%</span></label><input id="opacity" type="range" min="10" max="100" value="55" /><div id="layerStatus" class="status">Chưa có lớp dữ liệu quy hoạch thuộc đồ án 1125.</div><button type="button" id="checkPoint" class="full">Tra cứu điểm đang chọn trong lớp đã nạp</button><div class="hint" id="pointQueryStatus">Chưa chọn điểm. Kết quả chỉ phản ánh lớp đã nạp, không phải kết luận quy hoạch chính thức.</div></section>
+<label class="check"><input type="checkbox" id="confirmRights" /> Tôi có quyền sử dụng dữ liệu cho mục đích này</label><label for="sourceName">Tên bộ dữ liệu</label><input id="sourceName" placeholder="Ví dụ: Lớp chức năng sử dụng đất của đồ án 1125" /><label for="sourceUrl">Nguồn / URL hồ sơ</label><input id="sourceUrl" type="url" placeholder="https://..." /><label for="sourceRights">Quyền sử dụng / giấy phép</label><input id="sourceRights" placeholder="Ghi rõ giấy phép / văn bản cho phép và phạm vi quyền" /><label for="geoFile">Tệp GeoJSON (EPSG:4326; vùng hoặc đường CAD)</label><input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json" /><button class="primary full" id="loadGeo">Nạp dữ liệu</button><div class="inline layercontrols"><label class="check"><input id="showLayer" type="checkbox" checked /> Hiển thị</label><button id="removeLayer" class="subtle">Xóa lớp</button></div><label for="opacity">Độ đậm lớp: <span id="opacityNum">55%</span></label><input id="opacity" type="range" min="10" max="100" value="55" /><div id="layerStatus" class="status">Chưa có lớp dữ liệu quy hoạch thuộc đồ án 1125.</div><button type="button" id="checkPoint" class="full">Tra cứu điểm đang chọn trong lớp đã nạp</button><div class="hint" id="pointQueryStatus">Chưa chọn điểm. Kết quả chỉ phản ánh lớp đã nạp, không phải kết luận quy hoạch chính thức.</div></section>
       <section><h2>Đo đạc bản đồ</h2>
 <label for="measureMode">Chế độ đo</label>
 <select id="measureMode"><option value="area">Diện tích (m²)</option><option value="distance">Khoảng cách (m / km)</option></select><p class="hint">Nhấn Bắt đầu, chọn các đỉnh trên bản đồ rồi Hoàn tất. Đây là phép đo ước tính từ tọa độ WGS84, không phải kết quả địa chính.</p><div class="inline"><button id="startDraw">Bắt đầu</button><button id="finishDraw">Hoàn tất</button><button id="undoDraw" class="subtle">Lùi 1 đỉnh</button><button id="clearDraw" class="subtle">Xóa</button></div><div id="areaResult" class="metric">Chưa đo</div></section>
@@ -77,6 +77,6 @@
     </main>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./app.js?v=8" defer></script>
+  <script src="./app.js?v=9" defer></script>
 </body>
 </html>
