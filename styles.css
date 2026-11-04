@@ -25,3 +25,11 @@
 
 /* Leaflet v0.4 */
 #map{background:#dce9e6}.leaflet-container{font-family:inherit}.leaflet-control-attribution{font-size:10px}.leaflet-control-zoom a{font-size:18px!important}.maperror{top:120px}
+
+/* v0.5 accessible basemap mode, legend and scale */
+#map.grayscaleMap .leaflet-tile-pane{filter:grayscale(1) contrast(1.08)}
+.mapLegend{position:absolute;left:14px;bottom:34px;z-index:2;display:none;background:rgba(255,255,255,.95);border:1px solid #d1dfdb;border-radius:8px;padding:7px 10px;font-size:11px;align-items:center;gap:7px;max-width:280px;box-shadow:0 2px 8px #0001}
+.mapLegend.visible{display:flex}
+.legendSwatch{display:inline-block;width:15px;height:15px;background:#148c7c80;border:2px solid #02645f;flex-shrink:0}
+@media(max-width:760px){.mapLegend{bottom:145px;max-width:55%;font-size:9px;padding:5px}}
+@media print{.mapLegend{display:none!important}}
