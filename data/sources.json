@@ -17,6 +17,19 @@
         "kind": "published_drawings",
         "url": "https://qhkt.hochiminhcity.gov.vn/tai-lieu-hop/ban-ve-do-an-dieu-chinh-quy-hoach-chung-tphcm-den-nam-2040-tam-nhin-den-nam-2060-3623.html",
         "status": "official_reference_only"
+      },
+      {
+        "kind": "official_approval_pdf",
+        "url": "https://qhkt.hochiminhcity.gov.vn/Media/Uploads/Tin%20t%E1%BB%A9c/%C4%90i%E1%BB%81u%20ch%E1%BB%89nh%20QHC%20TP%20%C4%91%E1%BA%BFn%202040/C%C3%B4ng%20b%E1%BB%91%20%C4%90%E1%BB%93%20%C3%A1n%20QHCTP%202040%2C%202060/QD1125-TTG-duyetDAQHCTP.pdf",
+        "status": "official_reference_only",
+        "rights_status": "republication_of_gis_drawings_not_confirmed",
+        "description": "Tệp PDF Quyết định 1125/QĐ-TTg trên tên miền Sở Quy hoạch - Kiến trúc; mở tại nguồn, không tái lưu trữ"
+      },
+      {
+        "kind": "official_public_announcement",
+        "url": "https://qhkt.hochiminhcity.gov.vn/thong-cao-bao-chi/cong-bo-ban-ve-do-an-dieu-chinh-quy-hoach-chung-tphcm-den-nam-2040-tam-nhin-den-nam-2060-3620.html",
+        "status": "official_reference_only",
+        "description": "Thông cáo công bố bản vẽ 07/05/2026"
       }
     ]
   },
@@ -27,6 +40,9 @@
     "allow_scraping": false,
     "require_rights_review": true,
     "required_crs": "EPSG:4326",
-    "public_geodata_status": "not_integrated"
+    "public_geodata_status": "not_integrated",
+    "website_attribution_notice": "Ghi rõ nguồn Sở Quy hoạch - Kiến trúc TPHCM khi phát hành lại thông tin; cần xác minh riêng quyền sao chép/số hóa/tái phân phối toàn bộ bản vẽ và GIS",
+    "last_checked": "2026-11-04",
+    "rights_status": "not_confirmed_for_gis_republication"
   }
 }
