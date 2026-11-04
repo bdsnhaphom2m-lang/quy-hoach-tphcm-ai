@@ -48,3 +48,5 @@
 /* v0.8 external WMS source configuration */
 .wmsPanel{background:#fafcf8;border:1px solid #dbe8c9;border-radius:10px;padding:14px;margin:12px 0}
 .wmsPanel .inline{flex-wrap:wrap}.wmsPanel input[type=range]{width:100%}
+
+.cadPanel{background:#fff9f1;border:1px solid #e8cba5;border-radius:10px;padding:14px;margin:12px 0}.cadPanel .inline{flex-wrap:wrap}
