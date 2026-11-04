@@ -79,3 +79,12 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - Thêm thước tỷ lệ bản đồ và chú giải lớp GIS do người dùng nạp.
 - Tạm thời không nhúng ảnh vệ tinh từ Esri hoặc các bên khác khi chưa xác định quyền sử dụng phù hợp cho website công khai. Không tích hợp dữ liệu quy hoạch chính thức.
 - Tuân thủ chính sách OSM tile: hiển thị ghi công, không tải hàng loạt/không offline; bản web demo chỉ dùng mức truy cập tương tác nhỏ.
+
+## Phạm vi dữ liệu được khóa — v0.6 (04/11/2026)
+- **CHỈ** đồ án Điều chỉnh quy hoạch chung Thành phố Hồ Chí Minh đến năm 2040, tầm nhìn 2060, Quyết định **1125/QĐ-TTg ngày 11/06/2025**.
+- Phạm vi pháp lý được phê duyệt là TP.HCM trước sáp nhập (theo nội dung văn bản); không mở rộng giả định sang Bình Dương cũ và Bà Rịa – Vũng Tàu cũ, dù bản đồ nền vẫn cho phép xem toàn thành phố sau sáp nhập.
+- Nguồn đối chiếu: https://chinhphu.vn/?docid=213900&pageid=27160 và https://qhkt.hochiminhcity.gov.vn/tai-lieu-hop/ban-ve-do-an-dieu-chinh-quy-hoach-chung-tphcm-den-nam-2040-tam-nhin-den-nam-2060-3623.html
+- `data/sources.json` ghi danh mục nguồn, không phải dữ liệu tọa độ hay lớp quy hoạch. Công bố bản vẽ **không tự động cấp quyền tái sử dụng/đăng lại**.
+- Chỉ cho phép nạp GeoJSON tự khai thuộc đồ án này, đánh dấu **chưa xác minh**; nguồn và quyền do người dùng khai báo không chứng minh tính pháp lý. Không tự tải lại dữ liệu từ cổng GIS nhà nước.
+- Có truy vấn điểm trong Polygon/MultiPolygon của **file đã nạp**; không tìm thấy polygon không chứng minh địa điểm nằm ngoài quy hoạch. Không có dữ liệu thửa địa chính chính thức hoặc AI đưa ra kết luận pháp lý.
+- Để xuất bản dữ liệu chính thức trên GitHub Pages cần xác minh bằng văn bản về nguồn, giấy phép tái sử dụng, quy chiếu đúng bản vẽ có hiệu lực, hệ tọa độ và chất lượng không gian.
