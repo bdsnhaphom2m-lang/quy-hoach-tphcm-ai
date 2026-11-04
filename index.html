@@ -6,7 +6,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Quy hoạch TP.HCM AI — GIS MVP</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./styles.css?v=2" />
+  <link rel="stylesheet" href="./styles.css?v=3" />
 </head>
 <body>
   <div class="app">
@@ -20,13 +20,22 @@
     </aside>
     <main class="main">
       <header><div><button id="toggleTools" class="mobileTools" aria-controls="tools" aria-expanded="false">☰ Công cụ GIS</button><h1>Bản đồ tra cứu TP.HCM sau sáp nhập</h1><p>TP.HCM · Bình Dương cũ · Bà Rịa – Vũng Tàu cũ</p></div><button id="printReport">In / lưu PDF</button></header>
-      <div id="map" aria-label="Bản đồ tương tác TP.HCM"></div>
+      <div id="map" aria-label="Bản đồ tương tác TP.HCM"></div><div id="mapError" hidden role="alert" class="maperror"></div>
       <div class="mapbadge">BẢN ĐỒ NỀN OSM · KHÔNG PHẢI BẢN ĐỒ QUY HOẠCH</div>
       <div id="detail" class="detail"><div class="detailtop"><strong>Thông tin vị trí</strong><button id="savePoint" disabled>Lưu điểm này</button></div><div id="detailBody">Nhấp vào bản đồ để xem tọa độ. Nếu đã nạp lớp GIS, hãy nhấp vào vùng tô màu để xem thuộc tính của dữ liệu.</div></div>
       <div id="feedback" role="status" aria-live="polite" class="feedback"></div>
     </main>
   </div>
-  <script src="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.js"></script>
-  <script src="./app.js?v=2"></script>
+  <script type="module">
+    const showError=(message)=>{const el=document.getElementById('mapError');el.hidden=false;el.textContent=message;};
+    try {
+      const maplibre=await import('https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs');
+      window.maplibregl=maplibre;
+      await import('./app.js?v=3');
+    } catch(error) {
+      console.error('Không khởi tạo được bản đồ:',error);
+      showError('Không tải được bản đồ. Kiểm tra mạng, thử Ctrl+F5 hoặc bật WebGL trong trình duyệt. Chi tiết: '+(error?.message||String(error)));
+    }
+  </script>
 </body>
 </html>
