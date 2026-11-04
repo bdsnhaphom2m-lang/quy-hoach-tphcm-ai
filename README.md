@@ -94,3 +94,9 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - Đã liên kết trực tiếp tới PDF quyết định 1125/QĐ-TTg từ tên miền Sở. Không sao chép PDF hay các bản vẽ quy hoạch vào repository.
 - **Chưa có bằng chứng xác nhận rõ ràng quyền số hóa và tái phát hành lớp GIS/bản đồ Raster hoặc Vector** của các bản vẽ được công bố. Ghi công nguồn một mình không đủ để khẳng định có toàn quyền tái sử dụng lớp bản đồ.
 - Danh mục này lưu hồ sơ tham chiếu có kiểm chứng và trạng thái quyền, không coi đó là giấy phép tái phân phối.
+
+## Raster overlay v0.7 (04/11/2026)
+- Có thể chọn ảnh PNG/JPG đồ án 1125/QĐ-TTg **đã nắn chỉnh tọa độ bởi QGIS hoặc GIS tương đương**, nhập 4 giới hạn WGS84 EPSG:4326 theo thứ tự Nam/Tây/Bắc/Đông và phủ bằng Leaflet `L.imageOverlay`.
+- Người dùng phải có quyền sử dụng ảnh. Đánh dấu bắt buộc xác nhận đồ án và quyền trước khi nạp. Ảnh xử lý trên trình duyệt, **không tự động upload**, không lưu qua lần tải lại; link chia sẻ điểm không chia sẻ ảnh.
+- Nút bật/tắt, thay đổi độ đậm và gỡ ảnh. Trạng thái luôn ghi **chưa kiểm định**. 4 góc hộp giới hạn không thể tự hiệu chỉnh bản vẽ nghiêng/biến dạng. Không được dùng ảnh trang PDF chưa nắn chỉnh hay tọa độ ước lượng để kết luận quy hoạch.
+- Chưa có ảnh gốc đã nắn chỉnh được đưa vào GitHub. Nếu có nguồn công khai và quyền phân phối cụ thể, cần làm quy trình QGIS/GDAL từ nguồn gốc trước khi triển khai lớp dữ liệu thực lên website.
