@@ -1,0 +1,36 @@
+{
+  "file": "MiConv.com__bdlogioi-p16x--1.dxf",
+  "status": "decoded_pending_crs_and_plan_provenance_review",
+  "drawing_version": "AC1009 (DXF R12)",
+  "cad_entities": 59494,
+  "layers": 54,
+  "entity_counts": {
+    "LINE": 41189,
+    "TEXT": 10444,
+    "POLYLINE": 3576,
+    "INSERT": 3070,
+    "POINT": 574,
+    "DIMENSION": 479,
+    "SOLID": 150,
+    "ARC": 7,
+    "CIRCLE": 5
+  },
+  "dominant_projected_extent_approx": {
+    "x": [
+      597500,
+      598450
+    ],
+    "y": [
+      1189250,
+      1190000
+    ],
+    "units": "likely metres; unconfirmed"
+  },
+  "evidence": "Entity labels contain 'Phường 16', 'Phường 16 - Tờ số ...', 'Phường 5 - Quận 5', and 'Phường 2 - Quận 6'.",
+  "caution": "This is a local cadastral/road-setback style drawing, not verified as an annex to 1125/QĐ-TTg. Do not present as official 2040/2060 plan.",
+  "coord_system": "unknown_projected_CRS",
+  "georeferenced": false,
+  "suitability": "Preview only; do not enable planning results until CRS and plan association are independently checked",
+  "user_authorization": "User states document is official. No rights metadata included in DXF.",
+  "checked_on": "2026-11-04"
+}
