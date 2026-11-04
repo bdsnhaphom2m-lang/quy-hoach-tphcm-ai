@@ -6,20 +6,20 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Quy hoạch TP.HCM AI — GIS MVP</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=2" />
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP · Dữ liệu minh bạch</span></div></div>
+    <aside class="sidebar" id="tools">
+      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.2 · Dữ liệu minh bạch</span></div></div>
       <div class="notice">⚠ Đây không phải cổng thông tin nhà nước. Chưa có dữ liệu quy hoạch chính thức tích hợp. Không dùng để kết luận pháp lý hoặc giao dịch.</div>
-      <section><h2>Tìm vị trí</h2><label for="place">Khu vực</label><select id="place"><option value="hcm">Trung tâm TP.HCM</option><option value="thudau">Thủ Dầu Một (Bình Dương cũ)</option><option value="vungtau">Vũng Tàu (BR-VT cũ)</option></select><label for="coords">Tọa độ WGS84 (vĩ độ, kinh độ)</label><div class="inline"><input id="coords" placeholder="10.7769, 106.7009" /><button id="goto">Đi</button></div><p class="hint">Nhấp bản đồ để xem tọa độ và lưu điểm.</p></section>
+      <section><h2>Tìm vị trí</h2><label for="address">Tìm địa chỉ / địa danh (OpenStreetMap)</label><div class="inline"><input id="address" type="search" placeholder="Ví dụ: Chợ Bến Thành" maxlength="160" autocomplete="off" /><button id="searchAddress">Tìm</button></div><div id="addressResults" class="searchresults" aria-live="polite"></div><p class="hint">Tra cứu theo yêu cầu qua Nominatim / OpenStreetMap; kết quả vị trí không phải thông tin quy hoạch.</p><label for="place">Khu vực</label><select id="place"><option value="hcm">Trung tâm TP.HCM</option><option value="thudau">Thủ Dầu Một (Bình Dương cũ)</option><option value="vungtau">Vũng Tàu (BR-VT cũ)</option></select><label for="coords">Tọa độ WGS84 (vĩ độ, kinh độ)</label><div class="inline"><input id="coords" placeholder="10.7769, 106.7009" /><button id="goto">Đi</button></div><p class="hint">Nhấp bản đồ để xem tọa độ và lưu điểm.</p></section>
       <section><h2>Lớp GIS của anh</h2><p class="hint">Nạp GeoJSON được phép sử dụng. Không tự động lấy dữ liệu từ cổng quy hoạch.</p><label for="sourceName">Tên bộ dữ liệu</label><input id="sourceName" placeholder="Ví dụ: Đồ án được cấp quyền" /><label for="sourceUrl">Nguồn / URL hồ sơ</label><input id="sourceUrl" type="url" placeholder="https://..." /><label for="sourceRights">Quyền sử dụng / giấy phép</label><input id="sourceRights" placeholder="Ví dụ: Được chủ sở hữu cho phép" /><label for="geoFile">Tệp GeoJSON (EPSG:4326)</label><input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json" /><button class="primary full" id="loadGeo">Nạp dữ liệu</button><div class="inline layercontrols"><label class="check"><input id="showLayer" type="checkbox" checked /> Hiển thị</label><button id="removeLayer" class="subtle">Xóa lớp</button></div><label for="opacity">Độ đậm lớp: <span id="opacityNum">55%</span></label><input id="opacity" type="range" min="10" max="100" value="55" /><div id="layerStatus" class="status">Chưa có dữ liệu quy hoạch.</div></section>
-      <section><h2>Đo diện tích</h2><p class="hint">Nhấn Bắt đầu, click các đỉnh trên bản đồ, chọn Hoàn tất. Giá trị chỉ tham khảo.</p><div class="inline"><button id="startDraw">Bắt đầu</button><button id="finishDraw">Hoàn tất</button><button id="clearDraw" class="subtle">Xóa</button></div><div id="areaResult" class="metric">Chưa đo</div></section>
-      <section><h2>Điểm đã lưu</h2><div id="savedPoints" class="saved"><span class="hint">Chưa có điểm nào.</span></div></section>
+      <section><h2>Đo diện tích</h2><p class="hint">Nhấn Bắt đầu, click các đỉnh trên bản đồ, chọn Hoàn tất. Giá trị chỉ tham khảo.</p><div class="inline"><button id="startDraw">Bắt đầu</button><button id="finishDraw">Hoàn tất</button><button id="undoDraw" class="subtle">Lùi 1 đỉnh</button><button id="clearDraw" class="subtle">Xóa</button></div><div id="areaResult" class="metric">Chưa đo</div></section>
+      <section><h2>Điểm đã lưu</h2><div class="inline"><button id="exportPoints" class="subtle">Xuất GeoJSON</button><button id="sharePoint" class="subtle" disabled>Chia sẻ điểm</button></div><div id="savedPoints" class="saved"><span class="hint">Chưa có điểm nào.</span></div></section>
     </aside>
     <main class="main">
-      <header><div><h1>Bản đồ tra cứu TP.HCM sau sáp nhập</h1><p>TP.HCM · Bình Dương cũ · Bà Rịa – Vũng Tàu cũ</p></div><button id="printReport">In / lưu PDF</button></header>
+      <header><div><button id="toggleTools" class="mobileTools" aria-controls="tools" aria-expanded="false">☰ Công cụ GIS</button><h1>Bản đồ tra cứu TP.HCM sau sáp nhập</h1><p>TP.HCM · Bình Dương cũ · Bà Rịa – Vũng Tàu cũ</p></div><button id="printReport">In / lưu PDF</button></header>
       <div id="map" aria-label="Bản đồ tương tác TP.HCM"></div>
       <div class="mapbadge">BẢN ĐỒ NỀN OSM · KHÔNG PHẢI BẢN ĐỒ QUY HOẠCH</div>
       <div id="detail" class="detail"><div class="detailtop"><strong>Thông tin vị trí</strong><button id="savePoint" disabled>Lưu điểm này</button></div><div id="detailBody">Nhấp vào bản đồ để xem tọa độ. Nếu đã nạp lớp GIS, hãy nhấp vào vùng tô màu để xem thuộc tính của dữ liệu.</div></div>
@@ -27,6 +27,6 @@
     </main>
   </div>
   <script src="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=2"></script>
 </body>
 </html>
