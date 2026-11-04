@@ -62,3 +62,13 @@ Dữ liệu quy hoạch chính thức; tìm số tờ/số thửa; dịch vụ c
 ## Giấy phép
 
 Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồm quyền tái phân phối dữ liệu quy hoạch hoặc tiles của bên thứ ba.
+
+## Nâng cấp v0.2 (04/11/2026)
+
+- Tìm địa danh/địa chỉ **khi nhấn Tìm** qua Nominatim (OpenStreetMap), không gợi ý tự động; tìm kiếm phụ thuộc kết nối Internet và chính sách dịch vụ công cộng. Không tra được số tờ/số thửa từ Nominatim. Kết quả chỉ là vị trí địa lý, không phải căn cứ quy hoạch.
+- Nhấn Enter để tìm; chọn một kết quả để định vị và xem tọa độ.
+- **Xuất GeoJSON** các điểm lưu cục bộ. **Chia sẻ điểm** qua URL có tham số vĩ độ/kinh độ; người nhận thấy vị trí nhưng không nhận dữ liệu người dùng đã nạp.
+- Khi đo diện tích có thể **Lùi 1 đỉnh** trước khi hoàn tất.
+- Trên điện thoại, dùng nút **☰ Công cụ GIS** để mở/đóng bảng điều khiển.
+
+> Bảo mật và dữ liệu: Khi dùng tìm kiếm địa chỉ, nội dung truy vấn được gửi tới dịch vụ Nominatim bên thứ ba. Không tìm địa chỉ riêng tư nếu không muốn tiết lộ dữ liệu tìm kiếm. Chỉ dùng mức truy vấn thủ công vừa phải; khi nhiều người truy cập, cần dịch vụ geocoding được cấp phép riêng.
