@@ -44,3 +44,7 @@
 .rasterPanel{background:#f8fbff;border:1px solid #d2e2f0;border-radius:10px;padding:14px;margin:12px 0}
 .rasterGrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 9px}
 .rasterPanel .inline{flex-wrap:wrap}.rasterPanel input[type=range]{width:100%}
+
+/* v0.8 external WMS source configuration */
+.wmsPanel{background:#fafcf8;border:1px solid #dbe8c9;border-radius:10px;padding:14px;margin:12px 0}
+.wmsPanel .inline{flex-wrap:wrap}.wmsPanel input[type=range]{width:100%}
