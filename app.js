@@ -2,6 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const places={hcm:[10.7769,106.7009],thudau:[10.9804,106.6519],vungtau:[10.3460,107.0843]};
+let cadLayerInstance=null;
 let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area',rasterOverlay=null,rasterObjectUrl=null,wmsLayerInstance=null;
 const pointKey='qhtphcm-saved-points-v1';
 const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
@@ -36,6 +37,10 @@ function init(){
   $('opacity').oninput=()=>{$('opacityNum').textContent=$('opacity').value+'%';if(planningLayer)planningLayer.setStyle({fillOpacity:Number($('opacity').value)/100})};
   $('loadGeo').onclick=loadGeo;
   $('loadRaster').onclick=loadRaster;
+  $('openCad').onclick=loadCadLocal;
+  $('removeCad').onclick=removeCad;
+  $('loadCadHosted').onclick=loadCadHosted;
+  $('showCad').onchange=()=>{if(!cadLayerInstance)return;if($('showCad').checked)cadLayerInstance.addTo(map);else map.removeLayer(cadLayerInstance)};
   $('inspectWms').onclick=inspectWms;
   $('loadWms').onclick=loadWms;
   $('removeWms').onclick=removeWms;
@@ -271,4 +276,26 @@ function loadWms(){
  if(wmsLayerInstance)map.removeLayer(wmsLayerInstance);
  wmsLayerInstance=layer;layer.addTo(map);
  $('wmsStatus').textContent='Đang tải ảnh WMS. Nguồn tự khai: '+attribution+'. Chưa kiểm định.';
+}
+
+/* CAD viewer — distinct from 1125 planning. The CRS EPSG:9210 assignment is provisional. */
+function removeCad(){if(cadLayerInstance){map.removeLayer(cadLayerInstance);cadLayerInstance=null}$('cadStatus').textContent='Đã gỡ lớp CAD.'}
+function showCadDataset(data,origin){
+ if(!data||data.type!=='FeatureCollection'||!Array.isArray(data.features)||data.features.length>1000)throw Error('File phải là GeoJSON FeatureCollection, tối đa 1000 nhóm layer.');
+ let count=0;
+ const check=v=>{if(!Array.isArray(v))return;if(typeof v[0]==='number'){if(++count>180000)throw Error('Vượt 180.000 đỉnh CAD.');if(!validCoord(v[1],v[0]))throw Error('Tọa độ không phải WGS84.');return;}v.forEach(check)};
+ data.features.forEach(f=>{if(!f.geometry||!['MultiLineString','LineString','Polygon','MultiPolygon'].includes(f.geometry.type))throw Error('Loại đường CAD không hỗ trợ.');check(f.geometry.coordinates)});
+ const colors={'0':'#366783','10':'#a95821','14':'#e08c3c','16':'#6a358e','45':'#177b78','22':'#a02f39','1':'#607383'};
+ const layer=L.geoJSON(data,{interactive:false,renderer:L.canvas({padding:.4}),style:f=>({color:colors[String(f.properties?.cad_layer)]||'#686868',weight:1,opacity:.7,fill:false})});
+ if(cadLayerInstance)map.removeLayer(cadLayerInstance);
+ cadLayerInstance=layer;layer.addTo(map);$('showCad').checked=true;
+ const bounds=layer.getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(.12),{maxZoom:17});
+ $('cadStatus').textContent='Đã nạp '+origin+' · '+data.features.length+' nhóm lớp · '+(data.metadata?.total_entities||'?')+' đối tượng CAD. Phạm vi dự kiến: P16 Q11 cũ. EPSG:9210 là GIẢ ĐỊNH. Đối chiếu đường Hồng Bàng, Lò Siêu, Nguyễn Chí Thanh.';
+ notify('Đã đặt đường CAD lên bản đồ theo tọa độ giả định. Hãy kiểm tra độ khớp.');
+}
+async function loadCadLocal(){const file=$('cadGeoFile').files[0];if(!file)return notify('Chọn tệp phuong16-q11-cad-tham-khao.geojson.');if(file.size>14*1024*1024)return notify('File vượt 14 MB.');try{$('cadStatus').textContent='Đang nạp CAD...';showCadDataset(JSON.parse(await file.text()),'từ máy')}catch(e){$('cadStatus').textContent='Lỗi đọc CAD: '+e.message}}
+async function loadCadHosted(){
+ $('cadStatus').textContent='Đang tìm dữ liệu CAD trên GitHub...';
+ try{const r=await fetch('./data/cad/phuong16-q11-cad-tham-khao.geojson',{cache:'no-store'});if(!r.ok)throw Error(r.status===404?'Chưa có file GeoJSON trên GitHub.':'HTTP '+r.status);showCadDataset(await r.json(),'từ GitHub')}
+ catch(e){$('cadStatus').textContent='Chưa thể tải CAD từ GitHub: '+e.message}
 }
