@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "plan": {
+    "id": "hcm-general-plan-2040-2060-q1125",
+    "title": "Đồ án điều chỉnh quy hoạch chung Thành phố Hồ Chí Minh đến năm 2040, tầm nhìn đến năm 2060",
+    "decision": "1125/QĐ-TTg",
+    "decision_date": "2025-06-11",
+    "approval_agency": "Thủ tướng Chính phủ",
+    "scope": "TP.HCM trước sáp nhập năm 2025; không mặc nhiên bao phủ Bình Dương cũ hoặc Bà Rịa – Vũng Tàu cũ",
+    "sources": [
+      {
+        "kind": "approval_decision",
+        "url": "https://chinhphu.vn/?docid=213900&pageid=27160",
+        "status": "official_reference_only"
+      },
+      {
+        "kind": "published_drawings",
+        "url": "https://qhkt.hochiminhcity.gov.vn/tai-lieu-hop/ban-ve-do-an-dieu-chinh-quy-hoach-chung-tphcm-den-nam-2040-tam-nhin-den-nam-2060-3623.html",
+        "status": "official_reference_only"
+      }
+    ]
+  },
+  "datasets": [],
+  "policy": {
+    "allow_other_plans": false,
+    "allow_unverified_public_layer": false,
+    "allow_scraping": false,
+    "require_rights_review": true,
+    "required_crs": "EPSG:4326",
+    "public_geodata_status": "not_integrated"
+  }
+}
