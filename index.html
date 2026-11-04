@@ -6,12 +6,12 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Quy hoạch TP.HCM AI — GIS MVP</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./styles.css?v=7" />
+  <link rel="stylesheet" href="./styles.css?v=8" />
 </head>
 <body>
   <div class="app">
     <aside class="sidebar" id="tools">
-      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.7 · Đồ án 1125/QĐ-TTg</span></div></div>
+      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.8 · Đồ án 1125/QĐ-TTg</span></div></div>
       <div class="notice">⚠ Đây không phải cổng thông tin nhà nước. Chưa có lớp dữ liệu quy hoạch đã xác minh. Không dùng để kết luận pháp lý, cấp phép hoặc giao dịch.</div>
 <section class="approvedPlan">
 <h2>Đồ án duy nhất được lựa chọn</h2>
@@ -31,7 +31,18 @@
 <p class="hint">Ảnh vệ tinh cần nguồn tile có giấy phép sử dụng phù hợp; chưa tích hợp ở bản miễn phí này.</p>
 </section>
 <section><h2>Tìm vị trí</h2><label for="address">Tìm địa chỉ / địa danh (OpenStreetMap)</label><div class="inline"><input id="address" type="search" placeholder="Ví dụ: Chợ Bến Thành" maxlength="160" autocomplete="off" /><button id="searchAddress">Tìm</button></div><div id="addressResults" class="searchresults" aria-live="polite"></div><p class="hint">Tra cứu theo yêu cầu qua Nominatim / OpenStreetMap; kết quả vị trí không phải thông tin quy hoạch.</p><label for="place">Khu vực</label><select id="place"><option value="hcm">Trung tâm TP.HCM</option><option value="thudau">Thủ Dầu Một (Bình Dương cũ)</option><option value="vungtau">Vũng Tàu (BR-VT cũ)</option></select><label for="coords">Tọa độ WGS84 (vĩ độ, kinh độ)</label><div class="inline"><input id="coords" placeholder="10.7769, 106.7009" /><button id="goto">Đi</button></div><p class="hint">Nhấp bản đồ để xem tọa độ và lưu điểm.</p></section>
-      <section class="rasterPanel"><h2>Ảnh bản vẽ quy hoạch 2040–2060 (Raster)</h2>
+      <section class="wmsPanel"><h2>Kết nối dịch vụ bản đồ WMS của đồ án 1125</h2>
+<p class="hint">Chỉ dùng URL WMS do bên sở hữu dữ liệu cho phép kết nối và công bố lại. Chưa có endpoint chính thức xác minh được để tự điền. Kết nối sẽ gửi yêu cầu trực tiếp từ trình duyệt.</p>
+<label for="wmsUrl">WMS GetCapabilities URL / đường dẫn gốc (HTTPS)</label><input id="wmsUrl" type="url" placeholder="https://example.gov.vn/geoserver/wms" autocomplete="off" />
+<button id="inspectWms" class="full">Kiểm tra dịch vụ WMS</button>
+<label for="wmsLayer">Tên lớp (từ GetCapabilities)</label><input id="wmsLayer" placeholder="workspace:layer_name" />
+<label for="wmsAttribution">Nguồn / chủ sở hữu</label><input id="wmsAttribution" placeholder="Tên cơ quan, URL điều khoản / giấy phép" />
+<label class="check"><input id="wmsRights" type="checkbox" /> Tôi xác nhận URL/lớp WMS thuộc đồ án 1125 và được phép hiển thị công khai</label>
+<div class="inline"><button id="loadWms" class="primary">Bật WMS</button><button id="removeWms" class="subtle">Tắt WMS</button></div>
+<label for="wmsOpacity">Độ đậm WMS: <span id="wmsOpacityText">65%</span></label><input id="wmsOpacity" type="range" min="0" max="100" value="65" />
+<div id="wmsStatus" class="status" role="status">Chưa kết nối WMS. Bản đồ hiện là OpenStreetMap.</div>
+</section>
+<section class="rasterPanel"><h2>Ảnh bản vẽ quy hoạch 2040–2060 (Raster)</h2>
 <p class="hint">Tải ảnh PNG/JPG đã được căn chỉnh tọa độ và có quyền sử dụng. Ảnh chỉ hiển thị trên trình duyệt này, không được đăng lên GitHub. <strong>Không điền tọa độ phỏng đoán:</strong> nếu chưa georeference, chưa thể đặt ảnh đúng vị trí.</p>
 <label for="rasterFile">Ảnh bản đồ đã căn chỉnh (PNG/JPG, ≤ 15 MB)</label>
 <input id="rasterFile" type="file" accept="image/png,image/jpeg" />
@@ -66,6 +77,6 @@
     </main>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./app.js?v=7" defer></script>
+  <script src="./app.js?v=8" defer></script>
 </body>
 </html>
