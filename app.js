@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const places={hcm:[10.7769,106.7009],thudau:[10.9804,106.6519],vungtau:[10.3460,107.0843]};
-let cadLayerInstance=null;
+let cadLayerInstance=null,cadAreaLayer=null,cadAreaFeatures=[],cadHouseLabels=null;
 let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area',rasterOverlay=null,rasterObjectUrl=null,wmsLayerInstance=null;
 const pointKey='qhtphcm-saved-points-v1';
 const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
@@ -37,6 +37,11 @@ function init(){
   $('opacity').oninput=()=>{$('opacityNum').textContent=$('opacity').value+'%';if(planningLayer)planningLayer.setStyle({fillOpacity:Number($('opacity').value)/100})};
   $('loadGeo').onclick=loadGeo;
   $('loadRaster').onclick=loadRaster;
+  $('loadCadArea').onclick=loadCadAreaLocal;
+  $('hostedCadArea').onclick=loadCadAreaHosted;
+  $('removeCadArea').onclick=removeCadArea;
+  $('showCadHouseLabels').onchange=updateCadLabels;
+  map.on('zoomend moveend',updateCadLabels);
   $('openCad').onclick=loadCadLocal;
   $('removeCad').onclick=removeCad;
   $('loadCadHosted').onclick=loadCadHosted;
@@ -298,4 +303,89 @@ async function loadCadHosted(){
  $('cadStatus').textContent='Đang tìm dữ liệu CAD trên GitHub...';
  try{const r=await fetch('./data/cad/phuong16-q11-cad-tham-khao.geojson',{cache:'no-store'});if(!r.ok)throw Error(r.status===404?'Chưa có file GeoJSON trên GitHub.':'HTTP '+r.status);showCadDataset(await r.json(),'từ GitHub')}
  catch(e){$('cadStatus').textContent='Chưa thể tải CAD từ GitHub: '+e.message}
+}
+
+/* v1.1: polygonized CAD boundary shapes & legacy house-number text from DXF */
+function removeCadArea(){
+ if(cadAreaLayer){map.removeLayer(cadAreaLayer);cadAreaLayer=null}
+ if(cadHouseLabels){map.removeLayer(cadHouseLabels);cadHouseLabels=null}
+ cadAreaFeatures=[];
+ $('cadAreaStatus').textContent='Đã gỡ lớp số nhà và diện tích CAD.';
+}
+function paintCadArea(data,origin){
+ if(!data||data.type!=='FeatureCollection'||!Array.isArray(data.features)||data.features.length>6000)throw Error('GeoJSON phải là FeatureCollection có tối đa 6000 vùng.');
+ let verticesCount=0;
+ for(const f of data.features){
+  if(f.geometry?.type!=='Polygon')throw Error('Cần Polygon từ đường ranh CAD.');
+  for(const ring of f.geometry.coordinates)for(const point of ring){
+   if(++verticesCount>150000)throw Error('Quá nhiều đỉnh.');
+   if(!validCoord(point[1],point[0]))throw Error('Tọa độ WGS84 không hợp lệ.');
+  }
+ }
+ const layer=L.geoJSON(data,{
+  renderer:L.canvas({padding:.4}),
+  style:{color:'#be6e1e',weight:1,opacity:.8,fillColor:'#f7ad47',fillOpacity:.12},
+  onEachFeature:(f,l)=>{
+   const props=f.properties||{};
+   l.on('click',e=>{
+    L.DomEvent.stopPropagation(e);
+    const area=Number(props.dien_tich_hinh_hoc_m2);
+    const num=props.so_nha_cad;
+    setPoint(e.latlng.lat,e.latlng.lng);
+    const el=document.createElement('div');
+    const title=document.createElement('strong');title.textContent='Vùng CAD #'+String(props.cad_id||'?');
+    const pre=document.createElement('pre');
+    pre.style.cssText='white-space:pre-wrap;font:inherit;margin:8px 0';
+    pre.textContent='Số nhà ghi trong CAD: '+(num||'Không có nhãn')+'\nDiện tích vùng khép kín: '+(Number.isFinite(area)?area.toLocaleString('vi-VN',{maximumFractionDigits:1})+' m²':'Không xác định')+'\nNguồn: layer 10 (đường) + 32 (chữ)\nCẢNH BÁO: diện tích suy dựng từ đường CAD, không phải số liệu pháp lý hoặc diện tích đất được chứng nhận; hệ tọa độ cần kiểm định.';
+    el.append(title,pre);
+    $('detailBody').replaceChildren(el);
+    l.setStyle({color:'#ab4e00',weight:3,fillOpacity:.33});
+    setTimeout(()=>{if(cadAreaLayer)cadAreaLayer.resetStyle(l)},1200);
+   });
+  }
+ });
+ if(cadAreaLayer)map.removeLayer(cadAreaLayer);
+ cadAreaLayer=layer;
+ cadAreaFeatures=data.features;
+ cadAreaLayer.addTo(map);
+ $('cadAreaStatus').textContent='Đã nạp '+data.features.length+' vùng ranh khép kín · '+(data.metadata?.labels_extracted||'?')+' nhãn số nhà đọc từ CAD. Nguồn '+origin+'. Kết quả m² ước tính, không phải diện tích pháp lý.';
+ const b=layer.getBounds();if(b.isValid())map.fitBounds(b.pad(.06),{maxZoom:17});
+ updateCadLabels();
+ notify('Đã nạp lớp số nhà và diện tích từ CAD. Phóng to để xem nhãn, nhấp vào vùng để xem m².');
+}
+function updateCadLabels(){
+ if(!map)return;
+ if(cadHouseLabels){map.removeLayer(cadHouseLabels);cadHouseLabels=null}
+ if(!cadAreaLayer||map.getZoom()<17||!$('showCadHouseLabels').checked)return;
+ cadHouseLabels=L.layerGroup().addTo(map);
+ const bb=map.getBounds();
+ let added=0;
+ for(const f of cadAreaFeatures){
+  const name=f.properties?.so_nha_cad;
+  if(!name)continue;
+  const ring=f.geometry.coordinates[0];
+  let x=0,y=0;
+  for(const p of ring){x+=p[0];y+=p[1]}
+  const lat=y/ring.length,lng=x/ring.length;
+  if(!bb.contains([lat,lng]))continue;
+  const icon=L.divIcon({className:'cadHouseLabel',html:'',iconSize:null});
+  // Avoid HTML injection: keep label as textContent.
+  const marker=L.marker([lat,lng],{icon,interactive:false});
+  marker.on('add',()=>{const el=marker.getElement();if(el)el.textContent=String(name).slice(0,30)});
+  marker.addTo(cadHouseLabels);
+  if(++added>=300)break;
+ }
+}
+async function loadCadAreaLocal(){
+ const file=$('cadAreaFile').files[0];if(!file)return notify('Chọn file phuong16-q11-so-nha-dien-tich-tham-khao.geojson.');
+ if(file.size>8*1024*1024)return notify('File vượt 8 MB.');
+ try{paintCadArea(JSON.parse(await file.text()),'máy của anh')}catch(e){$('cadAreaStatus').textContent='Không nạp được dữ liệu: '+e.message}
+}
+async function loadCadAreaHosted(){
+ $('cadAreaStatus').textContent='Đang kiểm tra dữ liệu trên GitHub...';
+ try{
+  const response=await fetch('./data/cad/phuong16-q11-so-nha-dien-tich-tham-khao.geojson',{cache:'no-store'});
+  if(!response.ok)throw Error(response.status===404?'Chưa upload file vào GitHub':'HTTP '+response.status);
+  paintCadArea(await response.json(),'GitHub');
+ }catch(e){$('cadAreaStatus').textContent='Không tải được file trên GitHub: '+e.message}
 }
