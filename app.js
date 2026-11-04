@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const places={hcm:[10.7769,106.7009],thudau:[10.9804,106.6519],vungtau:[10.3460,107.0843]};
-let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area',rasterOverlay=null,rasterObjectUrl=null;
+let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area',rasterOverlay=null,rasterObjectUrl=null,wmsLayerInstance=null;
 const pointKey='qhtphcm-saved-points-v1';
 const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
 const fmt=x=>Number(x).toFixed(6);
@@ -36,6 +36,10 @@ function init(){
   $('opacity').oninput=()=>{$('opacityNum').textContent=$('opacity').value+'%';if(planningLayer)planningLayer.setStyle({fillOpacity:Number($('opacity').value)/100})};
   $('loadGeo').onclick=loadGeo;
   $('loadRaster').onclick=loadRaster;
+  $('inspectWms').onclick=inspectWms;
+  $('loadWms').onclick=loadWms;
+  $('removeWms').onclick=removeWms;
+  $('wmsOpacity').oninput=()=>{$('wmsOpacityText').textContent=$('wmsOpacity').value+'%';if(wmsLayerInstance)wmsLayerInstance.setOpacity(Number($('wmsOpacity').value)/100)};
   $('removeRaster').onclick=removeRaster;
   $('showRaster').onchange=()=>{if(!rasterOverlay)return; if($('showRaster').checked)rasterOverlay.addTo(map);else map.removeLayer(rasterOverlay)};
   $('rasterOpacity').oninput=()=>{$('rasterOpacityText').textContent=$('rasterOpacity').value+'%';if(rasterOverlay)rasterOverlay.setOpacity(Number($('rasterOpacity').value)/100)};
@@ -214,4 +218,57 @@ async function loadRaster(){
   $('rasterStatus').textContent=file.name+' · '+img.naturalWidth+'×'+img.naturalHeight+' · ĐÃ NẠP CỤC BỘ · TỌA ĐỘ NGƯỜI DÙNG KHAI BÁO · CHƯA KIỂM ĐỊNH. Phải đối chiếu điểm khống chế trước khi sử dụng.';
   notify('Đã phủ ảnh Raster tại tọa độ khai báo. Chưa xác minh căn chỉnh.');
  } catch(e){URL.revokeObjectURL(pendingUrl);notify('Không nạp được ảnh: '+e.message)}
+}
+
+/* WMS 1.1.1 user-supplied endpoint; no discovery/scraping of restricted service endpoints. */
+function safeWmsUrl(raw) {
+ const parsed=new URL(raw);
+ if(parsed.protocol!=='https:')throw Error('Chỉ chấp nhận HTTPS.');
+ if(parsed.username||parsed.password)throw Error('Không dùng URL chứa tài khoản/mật khẩu.');
+ if(parsed.hostname==='localhost'||parsed.hostname.endsWith('.local')||parsed.hostname==='127.0.0.1')throw Error('Không dùng máy chủ nội bộ.');
+ return parsed;
+}
+async function inspectWms(){
+ const status=$('wmsStatus'),urlText=$('wmsUrl').value.trim();
+ if(!urlText)return notify('Nhập URL WMS trước.');
+ let url;try{url=safeWmsUrl(urlText)}catch(e){return notify('URL không hợp lệ: '+e.message)}
+ url.searchParams.set('SERVICE','WMS');
+ url.searchParams.set('REQUEST','GetCapabilities');
+ url.searchParams.set('VERSION','1.1.1');
+ status.textContent='Đang kiểm tra GetCapabilities (dịch vụ cần bật CORS)...';
+ try{
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),12000);
+  let res;
+  try{res=await fetch(url,{signal:controller.signal,mode:'cors',credentials:'omit'})}
+  finally{clearTimeout(timer)}
+  if(!res.ok)throw Error('HTTP '+res.status);
+  const xml=await res.text();
+  if(xml.length>3_000_000)throw Error('Tài liệu GetCapabilities quá lớn.');
+  const parsed=new DOMParser().parseFromString(xml,'application/xml');
+  if(parsed.querySelector('parsererror'))throw Error('Không đọc được XML.');
+  if(!/WMT_MS_Capabilities|WMS_Capabilities/.test(parsed.documentElement.localName))throw Error('Đây không phải WMS GetCapabilities.');
+  const names=Array.from(parsed.querySelectorAll('Layer > Name')).map(e=>e.textContent.trim()).filter(Boolean);
+  status.textContent='WMS phản hồi thành công. Có '+names.length+' lớp được công bố trong GetCapabilities. Danh sách ví dụ: '+names.slice(0,12).join(' · ')+'. Hãy xác minh lớp đúng đồ án 1125 trước khi bật.';
+ }catch(err){status.textContent='Không kiểm tra được WMS từ trình duyệt: '+err.message+'. Có thể do CORS, máy chủ hoặc URL không phải dịch vụ WMS công khai.'}
+}
+function removeWms(){
+ if(wmsLayerInstance){map.removeLayer(wmsLayerInstance);wmsLayerInstance=null}
+ $('wmsStatus').textContent='Đã tắt WMS. Chưa có lớp quy hoạch chính thức tích hợp mặc định.';
+}
+function loadWms(){
+ if(!map)return notify('Bản đồ chưa sẵn sàng.');
+ if(!$('wmsRights').checked)return notify('Cần xác nhận quyền hiển thị công khai và đúng đồ án 1125.');
+ const source=$('wmsUrl').value.trim(),name=$('wmsLayer').value.trim(),attribution=$('wmsAttribution').value.trim();
+ if(!source||!name||!attribution)return notify('Nhập URL, tên lớp và nguồn.');
+ if(!/^[a-zA-Z0-9_.:-]+$/.test(name))return notify('Tên lớp WMS không hợp lệ.');
+ let url;try{url=safeWmsUrl(source);url.searchParams.delete('SERVICE');url.searchParams.delete('REQUEST');url.searchParams.delete('VERSION')}
+ catch(e){return notify(e.message)}
+ const layer=L.tileLayer.wms(url.toString(),{layers:name,styles:'',format:'image/png',transparent:true,version:'1.1.1',opacity:Number($('wmsOpacity').value)/100,attribution:'WMS: '+attribution});
+ let errs=0;
+ layer.on('tileerror',()=>{errs++;if(errs>=4)$('wmsStatus').textContent='WMS không tải được tile. Kiểm tra URL, tên lớp, quyền truy cập, CRS hoặc CORS.'});
+ layer.on('tileload',()=>{$('wmsStatus').textContent='WMS đang hiển thị — do người dùng cấu hình. Đối chiếu nguồn và hiệu lực trước khi kết luận quy hoạch.'});
+ if(wmsLayerInstance)map.removeLayer(wmsLayerInstance);
+ wmsLayerInstance=layer;layer.addTo(map);
+ $('wmsStatus').textContent='Đang tải ảnh WMS. Nguồn tự khai: '+attribution+'. Chưa kiểm định.';
 }
