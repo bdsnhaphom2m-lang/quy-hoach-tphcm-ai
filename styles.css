@@ -33,3 +33,9 @@
 .legendSwatch{display:inline-block;width:15px;height:15px;background:#148c7c80;border:2px solid #02645f;flex-shrink:0}
 @media(max-width:760px){.mapLegend{bottom:145px;max-width:55%;font-size:9px;padding:5px}}
 @media print{.mapLegend{display:none!important}}
+
+.approvedPlan{background:#f7fbfa;border:1px solid #d7e9e3;border-radius:10px;padding:14px;margin:12px 0}
+.approvedPlan strong{display:block;font-size:13px;line-height:1.5}
+.officialLinks{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.officialLinks a{color:#075d55;font-size:11px;text-decoration:underline}
+#pointQueryStatus{background:#f2f7f7;padding:9px;border-radius:8px;overflow-wrap:anywhere}
