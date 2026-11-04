@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const places={hcm:[10.7769,106.7009],thudau:[10.9804,106.6519],vungtau:[10.3460,107.0843]};
-let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area';
+let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area',rasterOverlay=null,rasterObjectUrl=null;
 const pointKey='qhtphcm-saved-points-v1';
 const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
 const fmt=x=>Number(x).toFixed(6);
@@ -35,6 +35,10 @@ function init(){
   $('showLayer').onchange=()=>showPlanning($('showLayer').checked);
   $('opacity').oninput=()=>{$('opacityNum').textContent=$('opacity').value+'%';if(planningLayer)planningLayer.setStyle({fillOpacity:Number($('opacity').value)/100})};
   $('loadGeo').onclick=loadGeo;
+  $('loadRaster').onclick=loadRaster;
+  $('removeRaster').onclick=removeRaster;
+  $('showRaster').onchange=()=>{if(!rasterOverlay)return; if($('showRaster').checked)rasterOverlay.addTo(map);else map.removeLayer(rasterOverlay)};
+  $('rasterOpacity').oninput=()=>{$('rasterOpacityText').textContent=$('rasterOpacity').value+'%';if(rasterOverlay)rasterOverlay.setOpacity(Number($('rasterOpacity').value)/100)};
   $('checkPoint').onclick=()=>{if(!selected)return notify('Chọn một điểm trên bản đồ trước.');querySelectedPoint()};
   $('removeLayer').onclick=()=>{if(planningLayer){map.removeLayer(planningLayer);planningLayer=null;}planningMeta=null;planningFeatures=[];$('pointQueryStatus').textContent='Chưa có lớp dữ liệu để đối chiếu.';$('mapLegend').classList.remove('visible');$('geoFile').value='';$('layerStatus').textContent='Chưa có dữ liệu quy hoạch.';notify('Đã xóa lớp GIS.')};
   $('startDraw').onclick=()=>{drawing=true;vertices=[];updateDraw();map.getContainer().style.cursor='crosshair';notify('Chọn các đỉnh trên bản đồ. Bấm Hoàn tất khi xong.')};
@@ -174,4 +178,40 @@ async function searchAddress(){
   const json=await resp.json();results.replaceChildren();if(!json.length)return notify('Không tìm thấy địa danh.');
   json.forEach(p=>{const lat=Number(p.lat),lng=Number(p.lon);if(!validCoord(lat,lng))return;const option=document.createElement('button');option.className='addressResult';option.textContent=p.display_name;option.onclick=()=>{map.flyTo([lat,lng],16);setPoint(lat,lng);$('coords').value=fmt(lat)+', '+fmt(lng);results.replaceChildren();closeTools()};results.append(option)})
  }catch(e){results.replaceChildren();notify('Không thể tìm địa chỉ: '+e.message)}finally{btn.disabled=false}
+}
+
+/* v0.7 — optional local image overlay, never an official GIS layer */
+function removeRaster(){
+ if(map&&rasterOverlay){map.removeLayer(rasterOverlay);rasterOverlay=null}
+ if(rasterObjectUrl){URL.revokeObjectURL(rasterObjectUrl);rasterObjectUrl=null}
+ $('rasterStatus').textContent='Chưa có ảnh Raster đã định vị được nạp.';
+ $('rasterFile').value='';
+}
+async function loadRaster(){
+ if(!map)return notify('Bản đồ nền chưa sẵn sàng.');
+ const file=$('rasterFile').files[0];
+ if(!file || !['image/png','image/jpeg'].includes(file.type))return notify('Chọn ảnh PNG hoặc JPG đã căn chỉnh.');
+ if(file.size>15*1024*1024)return notify('Ảnh vượt 15 MB. Vui lòng tối ưu ảnh hoặc tạo raster tiles hợp lệ.');
+ if(!$('rasterRights').checked)return notify('Cần xác nhận đúng đồ án và quyền sử dụng ảnh.');
+ const ids=['rasterSouth','rasterWest','rasterNorth','rasterEast'];
+ const fields=ids.map(id=>$(id).value.trim());
+ if(fields.some(v=>!v||!/^-?\d+(\.\d+)?$/.test(v)))return notify('Nhập đủ bốn giới hạn tọa độ WGS84 dạng thập phân.');
+ const [south,west,north,east]=fields.map(Number);
+ if(!validCoord(south,west)||!validCoord(north,east)||north<=south||east<=west)return notify('Giới hạn tọa độ không hợp lệ: Bắc phải lớn hơn Nam, Đông lớn hơn Tây.');
+ if(north-south>5||east-west>5)return notify('Phạm vi quá lớn so với vùng bản vẽ dự kiến; kiểm tra lại tọa độ.');
+ // Reject thumbnails/invalid image files before drawing them.
+ const pendingUrl=URL.createObjectURL(file);
+ try {
+  const img=new Image();img.src=pendingUrl;
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Ảnh không đọc được.'))});
+  if(img.naturalWidth<300||img.naturalHeight<300)throw Error('Ảnh quá nhỏ để tham khảo bản vẽ.');
+  const layer=L.imageOverlay(pendingUrl,[[south,west],[north,east]],{opacity:Number($('rasterOpacity').value)/100,interactive:false,alt:'Ảnh bản vẽ do người dùng cung cấp, chưa kiểm chứng độ chính xác tọa độ'});
+  if(rasterOverlay)map.removeLayer(rasterOverlay);
+  if(rasterObjectUrl)URL.revokeObjectURL(rasterObjectUrl);
+  rasterOverlay=layer;rasterObjectUrl=pendingUrl;
+  layer.addTo(map);layer.bringToBack(); // Leaflet overlay pane stays above the OSM tile pane.
+  $('showRaster').checked=true;map.fitBounds([[south,west],[north,east]],{padding:[20,20],maxZoom:15});
+  $('rasterStatus').textContent=file.name+' · '+img.naturalWidth+'×'+img.naturalHeight+' · ĐÃ NẠP CỤC BỘ · TỌA ĐỘ NGƯỜI DÙNG KHAI BÁO · CHƯA KIỂM ĐỊNH. Phải đối chiếu điểm khống chế trước khi sử dụng.';
+  notify('Đã phủ ảnh Raster tại tọa độ khai báo. Chưa xác minh căn chỉnh.');
+ } catch(e){URL.revokeObjectURL(pendingUrl);notify('Không nạp được ảnh: '+e.message)}
 }
