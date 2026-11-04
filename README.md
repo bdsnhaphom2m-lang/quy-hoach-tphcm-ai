@@ -111,3 +111,10 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - DXF người dùng cung cấp thể hiện Phường 16, Quận 11 cũ; nội dung đường Lò Siêu, Hồng Bàng, Nguyễn Chí Thanh, Phan Xích Long.
 - File `phuong16-q11-cad-tham-khao.geojson` được chuyển từ CAD bằng phép chiếu **giả định EPSG:9210 VN-2000 TM-3 105°45′ sang WGS84**. Không khẳng định trùng khớp địa chính đến mét khi chưa xác minh điểm khống chế.
 - Website có bảng nạp GeoJSON CAD trực tiếp từ máy và nút nạp từ GitHub tại `data/cad/phuong16-q11-cad-tham-khao.geojson` nếu đã upload. Đây là lớp **tham khảo độc lập** với đồ án QĐ 1125, không được gọi là thông tin chức năng đất.
+
+## v1.1 — Số nhà và diện tích hình học CAD
+- DXF layer 32 chứa nhãn số nhà; layer 10 chứa mạng đường hình học.
+- Quy trình `shapely.ops.polygonize` dựng vùng khép kín từ đường CAD, `STRtree` ghép nhãn số nhà nằm trong vùng, `pyproj` xuất WGS84 theo CRS *giả định* EPSG:9210.
+- File `phuong16-q11-so-nha-dien-tich-tham-khao.geojson` là **sản phẩm suy dựng**, không phải dữ liệu thửa đất được chứng nhận. Các vùng gồm cả các khối không phải thửa pháp lý; số nhà trong CAD không được đối chiếu số nhà hiện hành.
+- Trên website nạp file này, sẽ hiện số nhà khi zoom 17+ và nhấp polygon để thấy diện tích tính trong mặt phẳng CAD (m²). Nếu chưa có polygon thì chỉ đo thủ công, không tạo diện tích giả.
+- CRS nguồn chưa kiểm định, đối chiếu ranh và vị trí thực tế trước khi sử dụng.
