@@ -72,3 +72,10 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - Trên điện thoại, dùng nút **☰ Công cụ GIS** để mở/đóng bảng điều khiển.
 
 > Bảo mật và dữ liệu: Khi dùng tìm kiếm địa chỉ, nội dung truy vấn được gửi tới dịch vụ Nominatim bên thứ ba. Không tìm địa chỉ riêng tư nếu không muốn tiết lộ dữ liệu tìm kiếm. Chỉ dùng mức truy vấn thủ công vừa phải; khi nhiều người truy cập, cần dịch vụ geocoding được cấp phép riêng.
+
+## Nâng cấp v0.5 (04/11/2026)
+- Chọn bản đồ đường phố hoặc hiển thị đơn sắc (cùng một nguồn OpenStreetMap, không phải ảnh vệ tinh). Không yêu cầu WebGL.
+- Công cụ đo diện tích hoặc đo chiều dài đường gấp khúc, với nút lùi đỉnh. Khoảng cách dùng Leaflet map.distance dựa trên WGS84; diện tích vẫn chỉ là ước tính.
+- Thêm thước tỷ lệ bản đồ và chú giải lớp GIS do người dùng nạp.
+- Tạm thời không nhúng ảnh vệ tinh từ Esri hoặc các bên khác khi chưa xác định quyền sử dụng phù hợp cho website công khai. Không tích hợp dữ liệu quy hoạch chính thức.
+- Tuân thủ chính sách OSM tile: hiển thị ghi công, không tải hàng loạt/không offline; bản web demo chỉ dùng mức truy cập tương tác nhỏ.
