@@ -106,3 +106,8 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - Kiểm tra GetCapabilities qua trình duyệt (cần CORS); liệt kê tên lớp, nạp tile, chỉnh độ đậm, tắt lớp, hiển thị tình trạng lỗi tile.
 - Kết nối là **dữ liệu do người dùng tự cấu hình và khai báo quyền**, không đồng nghĩa lớp đã được xác thực từ Quyết định 1125/QĐ-TTg. Không có WMS mặc định chưa được xác minh.
 - Chỉ hỗ trợ URL HTTPS công khai, không nhập token, mật khẩu hoặc endpoint nội bộ; không dùng để vượt kiểm soát truy cập. Truy cập bản đồ có thể chịu điều khoản và hạn mức của nhà cung cấp.
+
+## Lớp CAD riêng (v1.0)
+- DXF người dùng cung cấp thể hiện Phường 16, Quận 11 cũ; nội dung đường Lò Siêu, Hồng Bàng, Nguyễn Chí Thanh, Phan Xích Long.
+- File `phuong16-q11-cad-tham-khao.geojson` được chuyển từ CAD bằng phép chiếu **giả định EPSG:9210 VN-2000 TM-3 105°45′ sang WGS84**. Không khẳng định trùng khớp địa chính đến mét khi chưa xác minh điểm khống chế.
+- Website có bảng nạp GeoJSON CAD trực tiếp từ máy và nút nạp từ GitHub tại `data/cad/phuong16-q11-cad-tham-khao.geojson` nếu đã upload. Đây là lớp **tham khảo độc lập** với đồ án QĐ 1125, không được gọi là thông tin chức năng đất.
