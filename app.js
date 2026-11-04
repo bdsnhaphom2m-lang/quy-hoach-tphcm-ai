@@ -2,7 +2,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const places={hcm:[10.7769,106.7009],thudau:[10.9804,106.6519],vungtau:[10.3460,107.0843]};
-let map=null,planningLayer=null,planningMeta=null,selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area';
+let map=null,planningLayer=null,planningMeta=null,planningFeatures=[],selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null,basemap=null,measureMode='area';
 const pointKey='qhtphcm-saved-points-v1';
 const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
 const fmt=x=>Number(x).toFixed(6);
@@ -35,7 +35,8 @@ function init(){
   $('showLayer').onchange=()=>showPlanning($('showLayer').checked);
   $('opacity').oninput=()=>{$('opacityNum').textContent=$('opacity').value+'%';if(planningLayer)planningLayer.setStyle({fillOpacity:Number($('opacity').value)/100})};
   $('loadGeo').onclick=loadGeo;
-  $('removeLayer').onclick=()=>{if(planningLayer){map.removeLayer(planningLayer);planningLayer=null;}planningMeta=null;$('mapLegend').classList.remove('visible');$('geoFile').value='';$('layerStatus').textContent='Chưa có dữ liệu quy hoạch.';notify('Đã xóa lớp GIS.')};
+  $('checkPoint').onclick=()=>{if(!selected)return notify('Chọn một điểm trên bản đồ trước.');querySelectedPoint()};
+  $('removeLayer').onclick=()=>{if(planningLayer){map.removeLayer(planningLayer);planningLayer=null;}planningMeta=null;planningFeatures=[];$('pointQueryStatus').textContent='Chưa có lớp dữ liệu để đối chiếu.';$('mapLegend').classList.remove('visible');$('geoFile').value='';$('layerStatus').textContent='Chưa có dữ liệu quy hoạch.';notify('Đã xóa lớp GIS.')};
   $('startDraw').onclick=()=>{drawing=true;vertices=[];updateDraw();map.getContainer().style.cursor='crosshair';notify('Chọn các đỉnh trên bản đồ. Bấm Hoàn tất khi xong.')};
   $('finishDraw').onclick=()=>{drawing=false;map.getContainer().style.cursor='';const min=measureMode==='area'?3:2;if(vertices.length<min){vertices=[];updateDraw();notify('Cần tối thiểu '+min+' điểm để đo.')}else updateDraw()};
   $('undoDraw').onclick=()=>{if(!drawing||!vertices.length)return notify('Chưa có đỉnh đang vẽ.');vertices.pop();updateDraw()};
@@ -74,19 +75,72 @@ function validate(geo){
 }
 async function loadGeo(){
  const file=$('geoFile').files[0],name=$('sourceName').value.trim(),url=$('sourceUrl').value.trim(),rights=$('sourceRights').value.trim();
+ if(!$('confirmPlan').checked||!$('confirmRights').checked)return notify('Cần xác nhận đúng đồ án 1125/QĐ-TTg và quyền sử dụng dữ liệu.');
  if(!file||!name||!url||!rights)return notify('Cần đủ file, tên, URL nguồn và quyền sử dụng.');
+ if(!/1125|2040|2060|quy.ho.ch.chung/i.test(name+' '+url))return notify('Tên hoặc URL nguồn phải liên hệ rõ đồ án 1125/QĐ-TTg (2040/2060).');
  if(!/^https?:\/\//i.test(url))return notify('URL nguồn phải bắt đầu bằng https:// hoặc http://.');
  if(file.size>12*1024*1024)return notify('File vượt 12 MB.');
  try{
   const geo=validate(JSON.parse(await file.text()));
   const layer=L.geoJSON(geo,{style:()=>({color:'#02645f',weight:2,fillColor:'#148c7c',fillOpacity:Number($('opacity').value)/100}),onEachFeature:(f,lyr)=>lyr.on('click',e=>{if(drawing)return;L.DomEvent.stopPropagation(e);setPoint(e.latlng.lat,e.latlng.lng,f.properties||{})})});
   if(planningLayer)map.removeLayer(planningLayer);
-  planningLayer=layer;planningMeta={name,url,rights};layer.addTo(map);$('mapLegend').classList.add('visible');
+  planningLayer=layer;planningMeta={name,url,rights,planId:'1125/QĐ-TTg',verified:false};planningFeatures=geo.features;layer.addTo(map);$('mapLegend').classList.add('visible');
+  $('pointQueryStatus').textContent='Đã có '+planningFeatures.length+' đối tượng do người dùng cung cấp, chưa xác minh. Chọn điểm và bấm Tra cứu.';
   $('showLayer').checked=true;$('layerStatus').textContent=name+' · '+geo.features.length+' vùng · CHƯA XÁC MINH · '+file.name;
   if(layer.getBounds().isValid())map.fitBounds(layer.getBounds(),{padding:[35,35],maxZoom:16});
   notify('Đã nạp file GIS của anh. Dữ liệu chưa được xác minh.');
  }catch(e){notify('Không nạp được: '+(e.message||e))}
 }
+function pointInRing(point,ring){
+ let inside=false;
+ for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+  const a=ring[i],b=ring[j];
+  if((a[1]>point[1])!==(b[1]>point[1])){
+   const x=(b[0]-a[0])*(point[1]-a[1])/(b[1]-a[1])+a[0];
+   if(point[0]<x)inside=!inside;
+  }
+ }
+ return inside;
+}
+function pointInPolygon(point,coordinates){
+ if(!Array.isArray(coordinates)||!coordinates.length||!pointInRing(point,coordinates[0]))return false;
+ return !coordinates.slice(1).some(hole=>pointInRing(point,hole));
+}
+function matchesFeature(lat,lng,f){
+ const point=[lng,lat],g=f.geometry;
+ if(!g)return false;
+ if(g.type==='Polygon')return pointInPolygon(point,g.coordinates);
+ if(g.type==='MultiPolygon')return g.coordinates.some(p=>pointInPolygon(point,p));
+ return false;
+}
+function querySelectedPoint(){
+ if(!selected)return;
+ if(!planningMeta || !planningFeatures.length){
+  $('pointQueryStatus').textContent='Chưa có lớp dữ liệu 1125/QĐ-TTg được cấp quyền và nạp vào website. Không thể xác định quy hoạch tại điểm này.';
+  return;
+ }
+ const hits=planningFeatures.filter(f=>matchesFeature(selected.lat,selected.lng,f));
+ if(!hits.length){
+  $('pointQueryStatus').textContent='Không tìm thấy polygon giao với điểm trong FILE ĐÃ NẠP. Không đồng nghĩa vị trí nằm ngoài phạm vi đồ án hoặc không có quy hoạch.';
+  return;
+ }
+ const summary='Đã tìm thấy '+hits.length+' vùng giao điểm trong FILE DO NGƯỜI DÙNG CUNG CẤP (chưa xác minh).';
+ $('pointQueryStatus').textContent=summary;
+ const lines=hits.slice(0,5).map((f,i)=>'Vùng '+(i+1)+': '+Object.entries(f.properties||{}).slice(0,12).map(([k,v])=>k+'='+String(v).slice(0,90)).join('; '));
+ const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;font:inherit;margin:0';pre.textContent='WGS84: '+fmt(selected.lat)+', '+fmt(selected.lng)+'\n'+summary+'\nNguồn tự khai: '+planningMeta.url+'\n'+lines.join('\n')+'\nKhông dùng kết quả để kết luận pháp lý.';
+ $('detailBody').replaceChildren(pre);
+}
+async function loadSourceCatalog(){
+ try{
+  const response=await fetch('./data/sources.json?v=1',{cache:'no-store'});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const catalog=await response.json();
+  if(catalog.plan?.decision!=='1125/QĐ-TTg')throw Error('Danh mục nguồn không đúng đồ án.');
+  const n=(catalog.datasets||[]).filter(d=>d.status==='approved_for_public_redistribution').length;
+  $('planDatasetStatus').textContent=n?'Có '+n+' bộ dữ liệu được phê duyệt để tích hợp; cần kiểm tra lớp trước khi hiển thị.':'Chưa có dữ liệu GIS vector của đồ án được xác minh quyền tái sử dụng. Đang hiển thị bản đồ nền và liên kết văn bản gốc.';
+ }catch(e){$('planDatasetStatus').textContent='Chưa đọc được danh mục nguồn: '+e.message;}
+}
+loadSourceCatalog();
 function showPlanning(show){if(!planningLayer)return;if(show)planningLayer.addTo(map);else map.removeLayer(planningLayer)}
 function ringArea(ring){const rad=x=>x*Math.PI/180,R=6378137;let sum=0;for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];let d=rad(b[1]-a[1]);if(d>Math.PI)d-=2*Math.PI;if(d< -Math.PI)d+=2*Math.PI;sum+=d*(2+Math.sin(rad(a[0]))+Math.sin(rad(b[0])))}return Math.abs(sum*R*R/2)}
 function updateDraw(){
