@@ -50,3 +50,8 @@
 .wmsPanel .inline{flex-wrap:wrap}.wmsPanel input[type=range]{width:100%}
 
 .cadPanel{background:#fff9f1;border:1px solid #e8cba5;border-radius:10px;padding:14px;margin:12px 0}.cadPanel .inline{flex-wrap:wrap}
+
+/* v1.1 CAD labels and area */
+.cadAreaPanel{background:#fff9ed;border:1px solid #ebd1a5;border-radius:10px;padding:14px;margin:12px 0}
+.cadAreaPanel .inline{flex-wrap:wrap}
+.cadHouseLabel{background:rgba(255,255,255,.9);border:1px solid #a9b3b1;border-radius:3px;box-shadow:0 1px 3px #0002;color:#3b403e;font-family:system-ui,sans-serif;font-size:10px;font-weight:700;white-space:nowrap;width:auto!important;height:auto!important;padding:0 2px;pointer-events:none}
