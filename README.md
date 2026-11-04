@@ -88,3 +88,9 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - Chỉ cho phép nạp GeoJSON tự khai thuộc đồ án này, đánh dấu **chưa xác minh**; nguồn và quyền do người dùng khai báo không chứng minh tính pháp lý. Không tự tải lại dữ liệu từ cổng GIS nhà nước.
 - Có truy vấn điểm trong Polygon/MultiPolygon của **file đã nạp**; không tìm thấy polygon không chứng minh địa điểm nằm ngoài quy hoạch. Không có dữ liệu thửa địa chính chính thức hoặc AI đưa ra kết luận pháp lý.
 - Để xuất bản dữ liệu chính thức trên GitHub Pages cần xác minh bằng văn bản về nguồn, giấy phép tái sử dụng, quy chiếu đúng bản vẽ có hiệu lực, hệ tọa độ và chất lượng không gian.
+
+## Kiểm tra nguồn 04/11/2026
+- Trang Sở QH-KT công bố bản vẽ (08/05/2026) và thông cáo (07/05/2026); nguồn có câu: ghi rõ nguồn Sở Quy hoạch - Kiến trúc TPHCM khi phát hành lại thông tin.
+- Đã liên kết trực tiếp tới PDF quyết định 1125/QĐ-TTg từ tên miền Sở. Không sao chép PDF hay các bản vẽ quy hoạch vào repository.
+- **Chưa có bằng chứng xác nhận rõ ràng quyền số hóa và tái phát hành lớp GIS/bản đồ Raster hoặc Vector** của các bản vẽ được công bố. Ghi công nguồn một mình không đủ để khẳng định có toàn quyền tái sử dụng lớp bản đồ.
+- Danh mục này lưu hồ sơ tham chiếu có kiểm chứng và trạng thái quyền, không coi đó là giấy phép tái phân phối.
