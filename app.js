@@ -1,111 +1,115 @@
-/* Quy Hoạch TP.HCM — transparent, user-supplied GIS MVP. No official planning data included. */
+/* Quy Hoạch TP.HCM AI v0.4 — Leaflet raster map, no WebGL required. */
 'use strict';
-const $ = (id) => document.getElementById(id);
-const places = { hcm:{center:[106.7009,10.7769],zoom:12},thudau:{center:[106.6519,10.9804],zoom:12},vungtau:{center:[107.0843,10.3460],zoom:12} };
-let selected=null, planningMeta=null, drawing=false, vertices=[], loadedFeatures=0;
+const $=id=>document.getElementById(id);
+const places={hcm:[10.7769,106.7009],thudau:[10.9804,106.6519],vungtau:[10.3460,107.0843]};
+let map=null,planningLayer=null,planningMeta=null,selected=null,drawing=false,vertices=[],drawLayer=null,pointMarker=null;
 const pointKey='qhtphcm-saved-points-v1';
-const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
-const fmt=(n)=>Number(n).toFixed(6);
-function notify(message){$('feedback').textContent=message;clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('feedback').textContent='',5000)}
-const rasterStyle={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',maxzoom:19}},layers:[{id:'osm',type:'raster',source:'osm'}]};
-if(!maplibregl.supported()){throw Error('Trình duyệt không hỗ trợ WebGL. Hãy bật tăng tốc phần cứng hoặc thử Chrome/Edge mới.');}
-const map = new maplibregl.Map({container:'map',style:rasterStyle,center:[106.87,10.77],zoom:9,maxZoom:19,attributionControl:true});
-map.addControl(new maplibregl.NavigationControl(),'top-right');
-let tileErrorCount=0;
-map.on('error',e=>{console.error('MapLibre:',e.error||e);tileErrorCount++;
- if(tileErrorCount===3){const el=$('mapError');el.hidden=false;el.textContent='Không tải được ô bản đồ nền. Kiểm tra kết nối tới OpenStreetMap hoặc thử mạng khác. (Các thao tác GIS có thể bị ảnh hưởng.)';}
-});
-map.on('idle',()=>{if(map.isSourceLoaded('osm')){$('mapError').hidden=true;tileErrorCount=0;}});
-
-const emptyCollection=()=>({type:'FeatureCollection',features:[]});
-map.on('load',()=>{
-  map.addSource('planning',{type:'geojson',data:emptyCollection()});
-  map.addLayer({id:'planning-fill',type:'fill',source:'planning',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],paint:{'fill-color':'#148c7c','fill-opacity':0.55}});
-  map.addLayer({id:'planning-line',type:'line',source:'planning',filter:['any',['==',['geometry-type'],'Polygon'],['==',['geometry-type'],'MultiPolygon']],paint:{'line-color':'#02645f','line-width':2}});
-  map.addSource('draw',{type:'geojson',data:emptyCollection()});
-  map.addLayer({id:'draw-fill',type:'fill',source:'draw',paint:{'fill-color':'#efaa38','fill-opacity':0.25}});
-  map.addLayer({id:'draw-line',type:'line',source:'draw',paint:{'line-color':'#ce6f10','line-width':3}});
-  map.addLayer({id:'draw-vertices',type:'circle',source:'draw',paint:{'circle-radius':5,'circle-color':'#d06c00'}});
-});
-function selectedDetail(info){ $('detailBody').replaceChildren(); const p=document.createElement('div');p.textContent=info; $('detailBody').append(p); }
-function setPoint(lng,lat,feature){selected={lng,lat};$('savePoint').disabled=false;$('sharePoint').disabled=false;let text=`WGS84: ${fmt(lat)}, ${fmt(lng)}\n`;
- if(feature){text+=`\nLớp: ${planningMeta?.name||'Chưa xác định'}\nNguồn: ${planningMeta?.url||'Không có'}\nQuyền: ${planningMeta?.rights||'Không có'}\nThuộc tính:\n`;
- const props=feature.properties||{};for(const [key,value] of Object.entries(props).slice(0,25))text+=`${key}: ${String(value).slice(0,250)}\n`;
- text+='\nChỉ là dữ liệu do người sử dụng nạp. Phải đối chiếu hồ sơ pháp lý.';
- }else text+='Không xác định thuộc tính quy hoạch tại điểm này.';
- const el=document.createElement('pre');el.textContent=text;el.style.cssText='white-space:pre-wrap;font:inherit;margin:0;';$('detailBody').replaceChildren(el);
-}
-map.on('click',(e)=>{if(drawing){vertices.push([e.lngLat.lng,e.lngLat.lat]);updateDraw();return;}
- const hits=map.getLayer('planning-fill')?map.queryRenderedFeatures(e.point,{layers:['planning-fill']}):[];
- setPoint(e.lngLat.lng,e.lngLat.lat,hits[0]);
-});
-$('place').onchange=()=>{const p=places[$('place').value];map.flyTo({center:p.center,zoom:p.zoom})};
-$('goto').onclick=()=>{const parts=$('coords').value.trim().split(/[;,\s]+/).map(Number);if(parts.length!==2||!validCoord(parts[0],parts[1]))return notify('Tọa độ không hợp lệ. Nhập: vĩ độ, kinh độ.');const [lat,lng]=parts;map.flyTo({center:[lng,lat],zoom:16});setPoint(lng,lat)};
-function walkCoords(coord,fn){if(typeof coord?.[0]==='number'){fn(coord);return;}if(Array.isArray(coord))for(const c of coord)walkCoords(c,fn)}
-function validCollection(geo){if(!geo||geo.type!=='FeatureCollection'||!Array.isArray(geo.features))throw Error('Tệp phải là GeoJSON FeatureCollection.');if(geo.features.length>20000)throw Error('Tệp quá nhiều đối tượng (>20.000). Hãy chia nhỏ tệp.');
- let total=0;for(const f of geo.features){if(f.type!=='Feature'||!f.geometry||!['Polygon','MultiPolygon'].includes(f.geometry.type))throw Error('MVP chỉ hỗ trợ Polygon/MultiPolygon.');walkCoords(f.geometry.coordinates,c=>{total++;if(total>500000)throw Error('Tệp có quá nhiều đỉnh.');if(!validCoord(c[1],c[0]))throw Error('Tọa độ phải thuộc EPSG:4326 (kinh độ, vĩ độ).')});}return geo;}
-$('loadGeo').onclick=async()=>{const file=$('geoFile').files[0],name=$('sourceName').value.trim(),url=$('sourceUrl').value.trim(),rights=$('sourceRights').value.trim();if(!file||!name||!url||!rights)return notify('Cần đủ tệp, tên, URL nguồn và quyền sử dụng.');if(!/^https?:\/\//i.test(url))return notify('URL nguồn phải bắt đầu bằng http:// hoặc https://.');if(file.size>12*1024*1024)return notify('Tệp vượt 12 MB. Hãy chia nhỏ.');
- try{const geo=validCollection(JSON.parse(await file.text()));if(!map.getSource('planning'))throw Error('Bản đồ chưa sẵn sàng.');map.getSource('planning').setData(geo);planningMeta={name,url,rights,file:file.name,loadedAt:new Date().toISOString(),status:'Người dùng cung cấp — chưa được xác minh'};loadedFeatures=geo.features.length;$('layerStatus').textContent=`${name} · ${loadedFeatures} vùng · CHƯA XÁC MINH · ${file.name}`;$('showLayer').checked=true;showPlanning(true);let west=Infinity,east=-Infinity,south=Infinity,north=-Infinity;for(const f of geo.features)walkCoords(f.geometry.coordinates,c=>{west=Math.min(west,c[0]);east=Math.max(east,c[0]);south=Math.min(south,c[1]);north=Math.max(north,c[1]);});if(Number.isFinite(west))map.fitBounds([[west,south],[east,north]],{padding:55,maxZoom:16});notify('Đã nạp GeoJSON từ máy của anh. Dữ liệu chưa được xác minh.');}catch(err){notify('Không nạp được: '+err.message)}};
-function showPlanning(show){for(const id of ['planning-fill','planning-line'])if(map.getLayer(id))map.setLayoutProperty(id,'visibility',show?'visible':'none')}
-$('showLayer').onchange=()=>showPlanning($('showLayer').checked);
-$('opacity').oninput=()=>{const x=Number($('opacity').value)/100;$('opacityNum').textContent=`${Math.round(x*100)}%`;if(map.getLayer('planning-fill'))map.setPaintProperty('planning-fill','fill-opacity',x)};
-$('removeLayer').onclick=()=>{if(map.getSource('planning'))map.getSource('planning').setData(emptyCollection());planningMeta=null;loadedFeatures=0;$('geoFile').value='';$('layerStatus').textContent='Chưa có dữ liệu quy hoạch.';notify('Đã bỏ lớp GIS.')};
-const rad=(x)=>x*Math.PI/180;
-// Approximate spherical polygon area on WGS84 sphere. Measurements are NOT cadastral.
-function ringArea(ring){const R=6378137;let sum=0;for(let i=0;i<ring.length;i++){const p1=ring[i],p2=ring[(i+1)%ring.length];let delta=rad(p2[0]-p1[0]);if(delta>Math.PI)delta-=2*Math.PI;if(delta< -Math.PI)delta+=2*Math.PI;sum+=delta*(2+Math.sin(rad(p1[1]))+Math.sin(rad(p2[1])))}return Math.abs(sum*R*R/2)}
-function updateDraw(){if(!map.getSource('draw'))return;const feats=vertices.map(c=>({type:'Feature',properties:{},geometry:{type:'Point',coordinates:c}}));if(vertices.length>=2)feats.push({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:vertices}});if(vertices.length>=3)feats.push({type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[[...vertices,vertices[0]]]}});map.getSource('draw').setData({type:'FeatureCollection',features:feats});$('areaResult').textContent=vertices.length>=3?`≈ ${ringArea(vertices).toLocaleString('vi-VN',{maximumFractionDigits:1})} m² (${vertices.length} đỉnh)`:`${vertices.length} đỉnh đã chọn`}
-$('startDraw').onclick=()=>{drawing=true;vertices=[];updateDraw();map.getCanvas().style.cursor='crosshair';notify('Chọn các đỉnh trên bản đồ, rồi bấm Hoàn tất.')};
-$('finishDraw').onclick=()=>{if(!drawing)return;drawing=false;map.getCanvas().style.cursor='';if(vertices.length<3){vertices=[];updateDraw();notify('Cần tối thiểu 3 đỉnh để đo diện tích.')}else updateDraw()};
-$('undoDraw').onclick=()=>{if(!drawing || !vertices.length)return notify('Bắt đầu đo để dùng chức năng lùi đỉnh.');vertices.pop();updateDraw()};
-$('clearDraw').onclick=()=>{drawing=false;vertices=[];map.getCanvas().style.cursor='';updateDraw();$('areaResult').textContent='Chưa đo'};
-function readSaved(){try{const data=JSON.parse(localStorage.getItem(pointKey)||'[]');return Array.isArray(data)?data.filter(x=>validCoord(x.lat,x.lng)).slice(0,50):[]}catch{return []}}
-function renderSaved(){const container=$('savedPoints');container.replaceChildren();const saved=readSaved();if(!saved.length){const span=document.createElement('span');span.className='hint';span.textContent='Chưa có điểm nào.';container.append(span);return}saved.forEach((p,i)=>{const line=document.createElement('div');line.className='inline';const btn=document.createElement('button');btn.textContent=`${i+1}. ${fmt(p.lat)}, ${fmt(p.lng)}`;btn.style.flex='1';btn.onclick=()=>{map.flyTo({center:[p.lng,p.lat],zoom:17});setPoint(p.lng,p.lat)};const del=document.createElement('button');del.textContent='×';del.title='Xóa điểm';del.onclick=()=>{const s=readSaved();s.splice(i,1);localStorage.setItem(pointKey,JSON.stringify(s));renderSaved()};line.append(btn,del);container.append(line)})}
-$('savePoint').onclick=()=>{if(!selected)return;const s=readSaved();if(s.length>=50)return notify('Tối đa 50 điểm lưu trên trình duyệt.');s.unshift(selected);localStorage.setItem(pointKey,JSON.stringify(s));renderSaved();notify('Đã lưu điểm trong trình duyệt này.')};
-// Explicit, non-autocomplete search. Respect the public Nominatim usage policy.
-let lastAddressSearch=0, addressAbort=null;
-function clearAddressResults(){ $('addressResults').replaceChildren(); }
-function showAddressResult(item){
- const btn=document.createElement('button');btn.type='button';btn.className='addressResult';
- btn.textContent=item.display_name;
- btn.onclick=()=>{const lat=Number(item.lat),lng=Number(item.lon);if(!validCoord(lat,lng))return;map.flyTo({center:[lng,lat],zoom:16});setPoint(lng,lat);clearAddressResults();$('coords').value=fmt(lat)+', '+fmt(lng);if(window.innerWidth<=760)closeTools();};
- $('addressResults').append(btn);
-}
-$('searchAddress').onclick=async()=>{
- const q=$('address').value.trim();
- if(q.length<3)return notify('Nhập ít nhất 3 ký tự địa chỉ / địa danh.');
- if(Date.now()-lastAddressSearch<1200)return notify('Vui lòng tìm lại sau ít nhất 1 giây.');
- lastAddressSearch=Date.now();
- if(addressAbort)addressAbort.abort();addressAbort=new AbortController();
- const btn=$('searchAddress');btn.disabled=true;clearAddressResults();
- const status=document.createElement('span');status.className='hint';status.textContent='Đang tra cứu địa danh…';$('addressResults').append(status);
+const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180;
+const fmt=x=>Number(x).toFixed(6);
+function notify(s){const el=$('feedback');el.textContent=s;clearTimeout(notify.timer);notify.timer=setTimeout(()=>el.textContent='',6500)}
+function error(s){const el=$('mapError');el.hidden=false;el.textContent=s;console.error(s)}
+if(!window.L){error('Thư viện Leaflet chưa tải được. Thử tắt chặn CDN unpkg.com hoặc kiểm tra mạng.');}
+else init();
+function init(){
  try{
-  const params=new URLSearchParams({q:q+', Việt Nam',format:'json',limit:'5',addressdetails:'0'});
-  const response=await fetch('https://nominatim.openstreetmap.org/search?'+params,{signal:addressAbort.signal,headers:{'Accept':'application/json'}});
-  if(!response.ok)throw Error('Dịch vụ tìm kiếm không phản hồi ('+response.status+').');
-  const results=await response.json();clearAddressResults();
-  if(!Array.isArray(results)||!results.length){notify('Không tìm thấy. Thử thêm tên quận/phường hoặc nhập tọa độ.');return;}
-  results.filter(p=>validCoord(Number(p.lat),Number(p.lon))).forEach(showAddressResult);
- }catch(e){clearAddressResults();if(e.name!=='AbortError')notify('Không tra cứu được địa chỉ: '+e.message)}
- finally{btn.disabled=false;}
-};
-$('address').addEventListener('keydown',e=>{if(e.key==='Enter')$('searchAddress').click()});
-function downloadJson(name,data){
- const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/geo+json'});
- const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+  map=L.map('map',{zoomControl:true,preferCanvas:true}).setView([10.77,106.87],9);
+  const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+   maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
+  });
+  let errors=0,loaded=0;
+  osm.on('tileerror',()=>{errors++;if(errors>=5 && !loaded)error('Không tải được ảnh nền OpenStreetMap. Kiểm tra kết nối tới tile.openstreetmap.org hoặc thử mạng khác.');});
+  osm.on('tileload',()=>{loaded++;$('mapError').hidden=true;});
+  osm.addTo(map);
+  map.on('click',e=>{
+   if(drawing){vertices.push([e.latlng.lat,e.latlng.lng]);updateDraw();return;}
+   setPoint(e.latlng.lat,e.latlng.lng);
+  });
+  $('place').onchange=()=>map.flyTo(places[$('place').value],12);
+  $('goto').onclick=()=>{const parts=$('coords').value.trim().split(/[;,\s]+/).map(Number);if(parts.length!==2||!validCoord(parts[0],parts[1]))return notify('Nhập hai tọa độ hợp lệ: vĩ độ, kinh độ.');setPoint(parts[0],parts[1]);map.flyTo(parts,16)};
+  $('showLayer').onchange=()=>showPlanning($('showLayer').checked);
+  $('opacity').oninput=()=>{$('opacityNum').textContent=$('opacity').value+'%';if(planningLayer)planningLayer.setStyle({fillOpacity:Number($('opacity').value)/100})};
+  $('loadGeo').onclick=loadGeo;
+  $('removeLayer').onclick=()=>{if(planningLayer){map.removeLayer(planningLayer);planningLayer=null;}planningMeta=null;$('geoFile').value='';$('layerStatus').textContent='Chưa có dữ liệu quy hoạch.';notify('Đã xóa lớp GIS.')};
+  $('startDraw').onclick=()=>{drawing=true;vertices=[];updateDraw();map.getContainer().style.cursor='crosshair';notify('Chọn các đỉnh trên bản đồ. Bấm Hoàn tất khi xong.')};
+  $('finishDraw').onclick=()=>{drawing=false;map.getContainer().style.cursor='';if(vertices.length<3){vertices=[];updateDraw();notify('Cần tối thiểu 3 đỉnh để đo diện tích.')}else updateDraw()};
+  $('undoDraw').onclick=()=>{if(!drawing||!vertices.length)return notify('Chưa có đỉnh đang vẽ.');vertices.pop();updateDraw()};
+  $('clearDraw').onclick=()=>{drawing=false;vertices=[];map.getContainer().style.cursor='';updateDraw();$('areaResult').textContent='Chưa đo'};
+  $('savePoint').onclick=()=>{if(!selected)return;const arr=readSaved();if(arr.length>=50)return notify('Đã lưu tối đa 50 điểm.');arr.unshift(selected);localStorage.setItem(pointKey,JSON.stringify(arr));renderSaved();notify('Đã lưu vị trí trên trình duyệt này.')};
+  $('exportPoints').onclick=exportPoints;
+  $('sharePoint').onclick=sharePoint;
+  $('printReport').onclick=()=>{if(!planningMeta)notify('Bản đồ chưa có lớp quy hoạch đã xác minh.');window.print()};
+  $('searchAddress').onclick=searchAddress;
+  $('address').addEventListener('keydown',e=>{if(e.key==='Enter')searchAddress()});
+  $('toggleTools').onclick=()=>{const isOpen=$('tools').classList.toggle('toolsOpen');$('toggleTools').setAttribute('aria-expanded',String(isOpen));setTimeout(()=>map.invalidateSize(),300)};
+  renderSaved();
+  const params=new URLSearchParams(location.search),lat=Number(params.get('lat')),lng=Number(params.get('lng'));
+  if(params.has('lat')&&params.has('lng')&&validCoord(lat,lng)){setPoint(lat,lng);map.setView([lat,lng],16)}
+  setTimeout(()=>map.invalidateSize(),250);
+ }catch(e){error('Không thể khởi động bản đồ: '+(e.message||String(e)));}
 }
-$('exportPoints').onclick=()=>{
- const saved=readSaved();if(!saved.length)return notify('Chưa có điểm lưu để xuất.');
- downloadJson('vi-tri-da-luu.geojson',{type:'FeatureCollection',features:saved.map((p,i)=>({type:'Feature',properties:{name:'Điểm '+(i+1),note:'Tọa độ do người dùng lưu; không phải quy hoạch'},geometry:{type:'Point',coordinates:[p.lng,p.lat]}}))});
- notify('Đã xuất điểm lưu ra GeoJSON.');
-};
-$('sharePoint').onclick=async()=>{
- if(!selected)return;
- const link=new URL(location.href);link.searchParams.set('lat',fmt(selected.lat));link.searchParams.set('lng',fmt(selected.lng));
- try{await navigator.clipboard.writeText(link.toString());notify('Đã sao chép liên kết vị trí.')}catch{notify('Không thể sao chép tự động; hãy dùng: '+link.toString())}
-};
-function closeTools(){$('tools').classList.remove('toolsOpen');$('toggleTools').setAttribute('aria-expanded','false');setTimeout(()=>map.resize(),100)}
-$('toggleTools').onclick=()=>{const open=$('tools').classList.toggle('toolsOpen');$('toggleTools').setAttribute('aria-expanded',String(open));setTimeout(()=>map.resize(),100)};
-const incoming=new URLSearchParams(location.search),shareLat=Number(incoming.get('lat')),shareLng=Number(incoming.get('lng'));
-if(incoming.has('lat')&&incoming.has('lng')&&validCoord(shareLat,shareLng)){map.once('load',()=>{map.flyTo({center:[shareLng,shareLat],zoom:16});setPoint(shareLng,shareLat);$('coords').value=fmt(shareLat)+', '+fmt(shareLng)})}
-$('printReport').onclick=()=>{if(!planningMeta)notify('Báo cáo hiện chưa có lớp quy hoạch đã xác minh; chỉ in bản đồ nền và vị trí.');window.print()};
-renderSaved();
+function closeTools(){if(window.innerWidth<=760){$('tools').classList.remove('toolsOpen');$('toggleTools').setAttribute('aria-expanded','false');setTimeout(()=>map.invalidateSize(),300)}}
+function setPoint(lat,lng,props){
+ selected={lat,lng};$('savePoint').disabled=false;$('sharePoint').disabled=false;
+ if(pointMarker)map.removeLayer(pointMarker);
+ pointMarker=L.circleMarker([lat,lng],{radius:7,color:'#fff',weight:2,fillColor:'#e65b3a',fillOpacity:1}).addTo(map);
+ let msg='WGS84: '+fmt(lat)+', '+fmt(lng)+'\n';
+ if(props){msg+='\nLớp: '+(planningMeta?.name||'Không xác định')+'\nNguồn: '+(planningMeta?.url||'Chưa cung cấp')+'\nQuyền: '+(planningMeta?.rights||'Chưa cung cấp')+'\nThuộc tính:\n';Object.entries(props).slice(0,25).forEach(([k,v])=>msg+=k+': '+String(v).slice(0,250)+'\n');msg+='\nDữ liệu người dùng nạp; chưa xác minh.'}
+ else msg+='Chưa có thông tin quy hoạch tại điểm này.';
+ const pre=document.createElement('pre');pre.textContent=msg;pre.style.cssText='white-space:pre-wrap;font:inherit;margin:0';$('detailBody').replaceChildren(pre);
+}
+function validate(geo){
+ if(!geo||geo.type!=='FeatureCollection'||!Array.isArray(geo.features))throw Error('Cần GeoJSON FeatureCollection.');
+ if(geo.features.length>20000)throw Error('Vượt 20.000 đối tượng.');
+ let n=0;for(const f of geo.features){
+  if(f.type!=='Feature'||!f.geometry||!['Polygon','MultiPolygon'].includes(f.geometry.type))throw Error('Chỉ nhận Polygon/MultiPolygon.');
+  function check(c){if(typeof c?.[0]==='number'){n++;if(n>500000)throw Error('Quá nhiều đỉnh.');if(!validCoord(c[1],c[0]))throw Error('Cần tọa độ WGS84 EPSG:4326.');return;}if(Array.isArray(c))c.forEach(check)}
+  check(f.geometry.coordinates);
+ }return geo;
+}
+async function loadGeo(){
+ const file=$('geoFile').files[0],name=$('sourceName').value.trim(),url=$('sourceUrl').value.trim(),rights=$('sourceRights').value.trim();
+ if(!file||!name||!url||!rights)return notify('Cần đủ file, tên, URL nguồn và quyền sử dụng.');
+ if(!/^https?:\/\//i.test(url))return notify('URL nguồn phải bắt đầu bằng https:// hoặc http://.');
+ if(file.size>12*1024*1024)return notify('File vượt 12 MB.');
+ try{
+  const geo=validate(JSON.parse(await file.text()));
+  const layer=L.geoJSON(geo,{style:()=>({color:'#02645f',weight:2,fillColor:'#148c7c',fillOpacity:Number($('opacity').value)/100}),onEachFeature:(f,lyr)=>lyr.on('click',e=>{if(drawing)return;L.DomEvent.stopPropagation(e);setPoint(e.latlng.lat,e.latlng.lng,f.properties||{})})});
+  if(planningLayer)map.removeLayer(planningLayer);
+  planningLayer=layer;planningMeta={name,url,rights};layer.addTo(map);
+  $('showLayer').checked=true;$('layerStatus').textContent=name+' · '+geo.features.length+' vùng · CHƯA XÁC MINH · '+file.name;
+  if(layer.getBounds().isValid())map.fitBounds(layer.getBounds(),{padding:[35,35],maxZoom:16});
+  notify('Đã nạp file GIS của anh. Dữ liệu chưa được xác minh.');
+ }catch(e){notify('Không nạp được: '+(e.message||e))}
+}
+function showPlanning(show){if(!planningLayer)return;if(show)planningLayer.addTo(map);else map.removeLayer(planningLayer)}
+function ringArea(ring){const rad=x=>x*Math.PI/180,R=6378137;let sum=0;for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length];let d=rad(b[1]-a[1]);if(d>Math.PI)d-=2*Math.PI;if(d< -Math.PI)d+=2*Math.PI;sum+=d*(2+Math.sin(rad(a[0]))+Math.sin(rad(b[0])))}return Math.abs(sum*R*R/2)}
+function updateDraw(){
+ if(drawLayer)map.removeLayer(drawLayer);
+ drawLayer=L.layerGroup();
+ if(vertices.length>=3)L.polygon(vertices,{color:'#ce6f10',weight:3,fillColor:'#efaa38',fillOpacity:.24}).addTo(drawLayer);
+ else if(vertices.length>=2)L.polyline(vertices,{color:'#ce6f10',weight:3}).addTo(drawLayer);
+ vertices.forEach(v=>L.circleMarker(v,{radius:4,color:'#ce6f10',fillOpacity:1}).addTo(drawLayer));
+ drawLayer.addTo(map);
+ $('areaResult').textContent=vertices.length>=3?'≈ '+ringArea(vertices).toLocaleString('vi-VN',{maximumFractionDigits:1})+' m² ('+vertices.length+' đỉnh)':vertices.length+' đỉnh đã chọn';
+}
+function readSaved(){try{const a=JSON.parse(localStorage.getItem(pointKey)||'[]');return Array.isArray(a)?a.filter(x=>validCoord(x.lat,x.lng)).slice(0,50):[]}catch{return []}}
+function renderSaved(){
+ const el=$('savedPoints');el.replaceChildren();const arr=readSaved();if(!arr.length){const sp=document.createElement('span');sp.className='hint';sp.textContent='Chưa có điểm nào.';el.append(sp)}
+ arr.forEach((p,i)=>{const row=document.createElement('div');row.className='inline';const btn=document.createElement('button');btn.style.flex='1';btn.textContent=(i+1)+'. '+fmt(p.lat)+', '+fmt(p.lng);btn.onclick=()=>{map.flyTo([p.lat,p.lng],16);setPoint(p.lat,p.lng);closeTools()};const del=document.createElement('button');del.textContent='×';del.title='Xóa điểm';del.onclick=()=>{const a=readSaved();a.splice(i,1);localStorage.setItem(pointKey,JSON.stringify(a));renderSaved()};row.append(btn,del);el.append(row)})
+}
+function download(name,data){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/geo+json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+function exportPoints(){const arr=readSaved();if(!arr.length)return notify('Chưa có điểm để xuất.');download('vi-tri-da-luu.geojson',{type:'FeatureCollection',features:arr.map((p,i)=>({type:'Feature',properties:{name:'Điểm '+(i+1)},geometry:{type:'Point',coordinates:[p.lng,p.lat]}}))});notify('Đã xuất GeoJSON.')}
+async function sharePoint(){if(!selected)return;const url=new URL(location.href);url.searchParams.set('lat',fmt(selected.lat));url.searchParams.set('lng',fmt(selected.lng));try{await navigator.clipboard.writeText(url.toString());notify('Đã sao chép liên kết.')}catch{notify('Liên kết: '+url.toString())}}
+let lastSearch=0;
+async function searchAddress(){
+ const q=$('address').value.trim();if(q.length<3)return notify('Nhập ít nhất 3 ký tự.');
+ if(Date.now()-lastSearch<1200)return notify('Vui lòng giãn cách ít nhất 1 giây.');lastSearch=Date.now();
+ const btn=$('searchAddress');btn.disabled=true;const results=$('addressResults');results.replaceChildren();results.textContent='Đang tìm...';
+ try{
+  const params=new URLSearchParams({q:q+', Việt Nam',format:'json',limit:'5'});
+  const resp=await fetch('https://nominatim.openstreetmap.org/search?'+params,{headers:{Accept:'application/json'}});
+  if(!resp.ok)throw Error('Mã HTTP '+resp.status);
+  const json=await resp.json();results.replaceChildren();if(!json.length)return notify('Không tìm thấy địa danh.');
+  json.forEach(p=>{const lat=Number(p.lat),lng=Number(p.lon);if(!validCoord(lat,lng))return;const option=document.createElement('button');option.className='addressResult';option.textContent=p.display_name;option.onclick=()=>{map.flyTo([lat,lng],16);setPoint(lat,lng);$('coords').value=fmt(lat)+', '+fmt(lng);results.replaceChildren();closeTools()};results.append(option)})
+ }catch(e){results.replaceChildren();notify('Không thể tìm địa chỉ: '+e.message)}finally{btn.disabled=false}
+}
