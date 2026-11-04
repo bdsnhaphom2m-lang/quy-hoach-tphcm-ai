@@ -100,3 +100,9 @@ Mã nguồn ví dụ do dự án phát triển: MIT (`LICENSE`). Không bao gồ
 - Người dùng phải có quyền sử dụng ảnh. Đánh dấu bắt buộc xác nhận đồ án và quyền trước khi nạp. Ảnh xử lý trên trình duyệt, **không tự động upload**, không lưu qua lần tải lại; link chia sẻ điểm không chia sẻ ảnh.
 - Nút bật/tắt, thay đổi độ đậm và gỡ ảnh. Trạng thái luôn ghi **chưa kiểm định**. 4 góc hộp giới hạn không thể tự hiệu chỉnh bản vẽ nghiêng/biến dạng. Không được dùng ảnh trang PDF chưa nắn chỉnh hay tọa độ ước lượng để kết luận quy hoạch.
 - Chưa có ảnh gốc đã nắn chỉnh được đưa vào GitHub. Nếu có nguồn công khai và quyền phân phối cụ thể, cần làm quy trình QGIS/GDAL từ nguồn gốc trước khi triển khai lớp dữ liệu thực lên website.
+
+## Bổ sung WMS v0.8 (04/11/2026)
+- Tích hợp lớp bản đồ theo chuẩn WMS 1.1.1 với **endpoint do chủ dữ liệu cấp phép và người dùng cấu hình**, không tự phỏng đoán/tự thu thập URL API từ cổng GIS.
+- Kiểm tra GetCapabilities qua trình duyệt (cần CORS); liệt kê tên lớp, nạp tile, chỉnh độ đậm, tắt lớp, hiển thị tình trạng lỗi tile.
+- Kết nối là **dữ liệu do người dùng tự cấu hình và khai báo quyền**, không đồng nghĩa lớp đã được xác thực từ Quyết định 1125/QĐ-TTg. Không có WMS mặc định chưa được xác minh.
+- Chỉ hỗ trợ URL HTTPS công khai, không nhập token, mật khẩu hoặc endpoint nội bộ; không dùng để vượt kiểm soát truy cập. Truy cập bản đồ có thể chịu điều khoản và hạn mức của nhà cung cấp.
