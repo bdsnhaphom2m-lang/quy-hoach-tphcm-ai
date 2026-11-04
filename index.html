@@ -6,13 +6,20 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>Quy hoạch TP.HCM AI — GIS MVP</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="./styles.css?v=5" />
+  <link rel="stylesheet" href="./styles.css?v=6" />
 </head>
 <body>
   <div class="app">
     <aside class="sidebar" id="tools">
-      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.5 · Dữ liệu minh bạch</span></div></div>
-      <div class="notice">⚠ Đây không phải cổng thông tin nhà nước. Chưa có dữ liệu quy hoạch chính thức tích hợp. Không dùng để kết luận pháp lý hoặc giao dịch.</div>
+      <div class="brand"><div class="brandicon">◈</div><div><strong>QUY HOẠCH TP.HCM</strong><span>GIS MVP v0.6 · Đồ án 1125/QĐ-TTg</span></div></div>
+      <div class="notice">⚠ Đây không phải cổng thông tin nhà nước. Chưa có lớp dữ liệu quy hoạch đã xác minh. Không dùng để kết luận pháp lý, cấp phép hoặc giao dịch.</div>
+<section class="approvedPlan">
+<h2>Đồ án duy nhất được lựa chọn</h2>
+<strong>Điều chỉnh quy hoạch chung TP.HCM đến năm 2040, tầm nhìn 2060</strong>
+<p class="hint">Quyết định 1125/QĐ-TTg · 11/06/2025 · Phạm vi phê duyệt: TP.HCM trước sáp nhập. Bản đồ nền vẫn hiển thị TP.HCM sau sáp nhập.</p>
+<div class="officialLinks"><a href="https://chinhphu.vn/?docid=213900&pageid=27160" target="_blank" rel="noopener noreferrer">Văn bản phê duyệt ↗</a><a href="https://qhkt.hochiminhcity.gov.vn/tai-lieu-hop/ban-ve-do-an-dieu-chinh-quy-hoach-chung-tphcm-den-nam-2040-tam-nhin-den-nam-2060-3623.html" target="_blank" rel="noopener noreferrer">Bản vẽ công bố ↗</a></div>
+<p id="planDatasetStatus" class="status" role="status">Đang đọc danh mục nguồn...</p>
+</section>
       <section><h2>Bản đồ nền</h2>
 <label for="baseStyle">Chế độ hiển thị</label>
 <select id="baseStyle">
@@ -22,7 +29,9 @@
 <p class="hint">Ảnh vệ tinh cần nguồn tile có giấy phép sử dụng phù hợp; chưa tích hợp ở bản miễn phí này.</p>
 </section>
 <section><h2>Tìm vị trí</h2><label for="address">Tìm địa chỉ / địa danh (OpenStreetMap)</label><div class="inline"><input id="address" type="search" placeholder="Ví dụ: Chợ Bến Thành" maxlength="160" autocomplete="off" /><button id="searchAddress">Tìm</button></div><div id="addressResults" class="searchresults" aria-live="polite"></div><p class="hint">Tra cứu theo yêu cầu qua Nominatim / OpenStreetMap; kết quả vị trí không phải thông tin quy hoạch.</p><label for="place">Khu vực</label><select id="place"><option value="hcm">Trung tâm TP.HCM</option><option value="thudau">Thủ Dầu Một (Bình Dương cũ)</option><option value="vungtau">Vũng Tàu (BR-VT cũ)</option></select><label for="coords">Tọa độ WGS84 (vĩ độ, kinh độ)</label><div class="inline"><input id="coords" placeholder="10.7769, 106.7009" /><button id="goto">Đi</button></div><p class="hint">Nhấp bản đồ để xem tọa độ và lưu điểm.</p></section>
-      <section><h2>Lớp GIS của anh</h2><p class="hint">Nạp GeoJSON được phép sử dụng. Không tự động lấy dữ liệu từ cổng quy hoạch.</p><label for="sourceName">Tên bộ dữ liệu</label><input id="sourceName" placeholder="Ví dụ: Đồ án được cấp quyền" /><label for="sourceUrl">Nguồn / URL hồ sơ</label><input id="sourceUrl" type="url" placeholder="https://..." /><label for="sourceRights">Quyền sử dụng / giấy phép</label><input id="sourceRights" placeholder="Ví dụ: Được chủ sở hữu cho phép" /><label for="geoFile">Tệp GeoJSON (EPSG:4326)</label><input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json" /><button class="primary full" id="loadGeo">Nạp dữ liệu</button><div class="inline layercontrols"><label class="check"><input id="showLayer" type="checkbox" checked /> Hiển thị</label><button id="removeLayer" class="subtle">Xóa lớp</button></div><label for="opacity">Độ đậm lớp: <span id="opacityNum">55%</span></label><input id="opacity" type="range" min="10" max="100" value="55" /><div id="layerStatus" class="status">Chưa có dữ liệu quy hoạch.</div></section>
+      <section><h2>Dữ liệu đồ án 1125/QĐ-TTg</h2><p class="hint">Chỉ nhận GeoJSON EPSG:4326 thuộc đồ án 1125/QĐ-TTg, có quyền tái sử dụng và công bố phù hợp. File do người dùng cung cấp vẫn là CHƯA XÁC MINH.</p>
+<label class="check"><input type="checkbox" id="confirmPlan" /> Tôi xác nhận file thuộc đúng đồ án 1125/QĐ-TTg</label>
+<label class="check"><input type="checkbox" id="confirmRights" /> Tôi có quyền sử dụng dữ liệu cho mục đích này</label><label for="sourceName">Tên bộ dữ liệu</label><input id="sourceName" placeholder="Ví dụ: Lớp chức năng sử dụng đất của đồ án 1125" /><label for="sourceUrl">Nguồn / URL hồ sơ</label><input id="sourceUrl" type="url" placeholder="https://..." /><label for="sourceRights">Quyền sử dụng / giấy phép</label><input id="sourceRights" placeholder="Ghi rõ giấy phép / văn bản cho phép và phạm vi quyền" /><label for="geoFile">Tệp GeoJSON (EPSG:4326)</label><input id="geoFile" type="file" accept=".geojson,.json,application/geo+json,application/json" /><button class="primary full" id="loadGeo">Nạp dữ liệu</button><div class="inline layercontrols"><label class="check"><input id="showLayer" type="checkbox" checked /> Hiển thị</label><button id="removeLayer" class="subtle">Xóa lớp</button></div><label for="opacity">Độ đậm lớp: <span id="opacityNum">55%</span></label><input id="opacity" type="range" min="10" max="100" value="55" /><div id="layerStatus" class="status">Chưa có lớp dữ liệu quy hoạch thuộc đồ án 1125.</div><button type="button" id="checkPoint" class="full">Tra cứu điểm đang chọn trong lớp đã nạp</button><div class="hint" id="pointQueryStatus">Chưa chọn điểm. Kết quả chỉ phản ánh lớp đã nạp, không phải kết luận quy hoạch chính thức.</div></section>
       <section><h2>Đo đạc bản đồ</h2>
 <label for="measureMode">Chế độ đo</label>
 <select id="measureMode"><option value="area">Diện tích (m²)</option><option value="distance">Khoảng cách (m / km)</option></select><p class="hint">Nhấn Bắt đầu, chọn các đỉnh trên bản đồ rồi Hoàn tất. Đây là phép đo ước tính từ tọa độ WGS84, không phải kết quả địa chính.</p><div class="inline"><button id="startDraw">Bắt đầu</button><button id="finishDraw">Hoàn tất</button><button id="undoDraw" class="subtle">Lùi 1 đỉnh</button><button id="clearDraw" class="subtle">Xóa</button></div><div id="areaResult" class="metric">Chưa đo</div></section>
@@ -30,13 +39,13 @@
     </aside>
     <main class="main">
       <header><div><button id="toggleTools" class="mobileTools" aria-controls="tools" aria-expanded="false">☰ Công cụ GIS</button><h1>Bản đồ tra cứu TP.HCM sau sáp nhập</h1><p>TP.HCM · Bình Dương cũ · Bà Rịa – Vũng Tàu cũ</p></div><button id="printReport">In / lưu PDF</button></header>
-      <div id="map" aria-label="Bản đồ tương tác TP.HCM"></div><div class="mapLegend" id="mapLegend"><span class="legendSwatch"></span> Lớp GIS người dùng nạp (chưa xác minh)</div><div id="mapError" hidden role="alert" class="maperror"></div>
+      <div id="map" aria-label="Bản đồ tương tác TP.HCM"></div><div class="mapLegend" id="mapLegend"><span class="legendSwatch"></span> Dữ liệu đồ án 1125 do người dùng nạp · chưa xác minh</div><div id="mapError" hidden role="alert" class="maperror"></div>
       <div class="mapbadge">BẢN ĐỒ NỀN OSM · KHÔNG PHẢI BẢN ĐỒ QUY HOẠCH</div>
       <div id="detail" class="detail"><div class="detailtop"><strong>Thông tin vị trí</strong><button id="savePoint" disabled>Lưu điểm này</button></div><div id="detailBody">Nhấp vào bản đồ để xem tọa độ. Nếu đã nạp lớp GIS, hãy nhấp vào vùng tô màu để xem thuộc tính của dữ liệu.</div></div>
       <div id="feedback" role="status" aria-live="polite" class="feedback"></div>
     </main>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="./app.js?v=5" defer></script>
+  <script src="./app.js?v=6" defer></script>
 </body>
 </html>
