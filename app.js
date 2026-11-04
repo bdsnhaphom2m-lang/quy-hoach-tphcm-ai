@@ -8,8 +8,15 @@ const validCoord=(lat,lng)=>Number.isFinite(lat)&&Number.isFinite(lng)&&lat>=-90
 const fmt=(n)=>Number(n).toFixed(6);
 function notify(message){$('feedback').textContent=message;clearTimeout(notify.timer);notify.timer=setTimeout(()=>$('feedback').textContent='',5000)}
 const rasterStyle={version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>',maxzoom:19}},layers:[{id:'osm',type:'raster',source:'osm'}]};
+if(!maplibregl.supported()){throw Error('Trình duyệt không hỗ trợ WebGL. Hãy bật tăng tốc phần cứng hoặc thử Chrome/Edge mới.');}
 const map = new maplibregl.Map({container:'map',style:rasterStyle,center:[106.87,10.77],zoom:9,maxZoom:19,attributionControl:true});
 map.addControl(new maplibregl.NavigationControl(),'top-right');
+let tileErrorCount=0;
+map.on('error',e=>{console.error('MapLibre:',e.error||e);tileErrorCount++;
+ if(tileErrorCount===3){const el=$('mapError');el.hidden=false;el.textContent='Không tải được ô bản đồ nền. Kiểm tra kết nối tới OpenStreetMap hoặc thử mạng khác. (Các thao tác GIS có thể bị ảnh hưởng.)';}
+});
+map.on('idle',()=>{if(map.isSourceLoaded('osm')){$('mapError').hidden=true;tileErrorCount=0;}});
+
 const emptyCollection=()=>({type:'FeatureCollection',features:[]});
 map.on('load',()=>{
   map.addSource('planning',{type:'geojson',data:emptyCollection()});
