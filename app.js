@@ -76,7 +76,7 @@ function validate(geo){
  if(!geo||geo.type!=='FeatureCollection'||!Array.isArray(geo.features))throw Error('Cần GeoJSON FeatureCollection.');
  if(geo.features.length>20000)throw Error('Vượt 20.000 đối tượng.');
  let n=0;for(const f of geo.features){
-  if(f.type!=='Feature'||!f.geometry||!['Polygon','MultiPolygon'].includes(f.geometry.type))throw Error('Chỉ nhận Polygon/MultiPolygon.');
+  if(f.type!=='Feature'||!f.geometry||!['Polygon','MultiPolygon','LineString','MultiLineString'].includes(f.geometry.type))throw Error('Chỉ nhận Polygon/MultiPolygon/LineString/MultiLineString.');
   function check(c){if(typeof c?.[0]==='number'){n++;if(n>500000)throw Error('Quá nhiều đỉnh.');if(!validCoord(c[1],c[0]))throw Error('Cần tọa độ WGS84 EPSG:4326.');return;}if(Array.isArray(c))c.forEach(check)}
   check(f.geometry.coordinates);
  }return geo;
@@ -90,7 +90,7 @@ async function loadGeo(){
  if(file.size>12*1024*1024)return notify('File vượt 12 MB.');
  try{
   const geo=validate(JSON.parse(await file.text()));
-  const layer=L.geoJSON(geo,{style:()=>({color:'#02645f',weight:2,fillColor:'#148c7c',fillOpacity:Number($('opacity').value)/100}),onEachFeature:(f,lyr)=>lyr.on('click',e=>{if(drawing)return;L.DomEvent.stopPropagation(e);setPoint(e.latlng.lat,e.latlng.lng,f.properties||{})})});
+  const layer=L.geoJSON(geo,{style:(f)=>({color:f.geometry.type.includes('Line')?'#bd5d1a':'#02645f',weight:f.geometry.type.includes('Line')?3:2,fillColor:'#148c7c',fillOpacity:Number($('opacity').value)/100}),onEachFeature:(f,lyr)=>lyr.on('click',e=>{if(drawing)return;L.DomEvent.stopPropagation(e);setPoint(e.latlng.lat,e.latlng.lng,f.properties||{})})});
   if(planningLayer)map.removeLayer(planningLayer);
   planningLayer=layer;planningMeta={name,url,rights,planId:'1125/QĐ-TTg',verified:false};planningFeatures=geo.features;layer.addTo(map);$('mapLegend').classList.add('visible');
   $('pointQueryStatus').textContent='Đã có '+planningFeatures.length+' đối tượng do người dùng cung cấp, chưa xác minh. Chọn điểm và bấm Tra cứu.';
